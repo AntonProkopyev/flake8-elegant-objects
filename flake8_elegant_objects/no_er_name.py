@@ -233,7 +233,7 @@ class NoErName:
             return []
 
         # Skip common property patterns
-        if node.name in ("property", "getter", "setter"):
+        if node.name in {"property", "getter", "setter"}:
             return []
 
         # Check for procedural verbs

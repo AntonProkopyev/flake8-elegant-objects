@@ -114,7 +114,7 @@ def is_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     """Check if function is a method (has self parameter)."""
     if not node.args.args:
         return False
-    return node.args.args[0].arg in ("self", "cls")
+    return node.args.args[0].arg in {"self", "cls"}
 
 
 def get_all_principles() -> list[Principle]:

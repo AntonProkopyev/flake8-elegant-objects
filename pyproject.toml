@@ -119,6 +119,7 @@ disallow_incomplete_defs = false
 [tool.ruff]
 target-version = "py310"
 line-length = 88
+preview = true
 
 [tool.ruff.lint]
 select = [
@@ -138,9 +139,9 @@ select = [
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)
-    "PLR0912", # too many branches (complex AST visitor)
     "PLR0913", # too many arguments
     "PLR2004", # magic value comparison
+    "PLR6301", # method could be static (design choice)
     "SIM102",  # nested if statements (clearer in AST context)
     "SIM114",  # combine if branches (clearer separate)
     "PTH123",  # use pathlib (keep simple for main CLI)

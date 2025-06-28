@@ -43,19 +43,35 @@ class ClassInfoCollector(ast.NodeVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Visit function definition, particularly __init__."""
         if self.current_class and node.name == "__init__":
-            for stmt in ast.walk(node):
-                if isinstance(stmt, ast.Assign):
-                    for target in stmt.targets:
-                        if (
-                            isinstance(target, ast.Attribute)
-                            and isinstance(target.value, ast.Name)
-                            and target.value.id == "self"
-                        ):
-                            is_mutable = self._is_mutable_value(stmt.value)
-                            self.state_tracker.add_instance_attr(
-                                self.current_class, target.attr, is_mutable
-                            )
+            self._process_init_method(node)
         self.generic_visit(node)
+
+    def _process_init_method(self, init_node: ast.FunctionDef) -> None:
+        """Process __init__ method for instance attributes."""
+        for stmt in ast.walk(init_node):
+            if isinstance(stmt, ast.Assign):
+                self._process_assignment(stmt)
+
+    def _process_assignment(self, stmt: ast.Assign) -> None:
+        """Process assignment statement for self attributes."""
+        if not self.current_class:
+            return
+
+        for target in stmt.targets:
+            if self._is_self_attribute(target):
+                assert isinstance(target, ast.Attribute)  # Type narrowing for mypy
+                is_mutable = self._is_mutable_value(stmt.value)
+                self.state_tracker.add_instance_attr(
+                    self.current_class, target.attr, is_mutable
+                )
+
+    def _is_self_attribute(self, target: ast.expr) -> bool:
+        """Check if target is a self attribute."""
+        return (
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+        )
 
     def _is_mutable_value(self, node: ast.AST) -> bool:
         """Determine if a value is mutable."""

@@ -11,25 +11,8 @@ class FactoryMethodChecker:
     def check_factory_pattern(self, node: ast.ClassDef) -> Violations:
         """Check if class follows immutable factory pattern."""
         violations = []
-        has_mutable_init = False
-        has_factory_methods = False
-
-        for item in node.body:
-            if isinstance(item, ast.FunctionDef):
-                if item.name == "__init__":
-                    for stmt in ast.walk(item):
-                        if isinstance(stmt, ast.Assign):
-                            for target in stmt.targets:
-                                if (
-                                    isinstance(target, ast.Attribute)
-                                    and isinstance(target.value, ast.Name)
-                                    and target.value.id == "self"
-                                    and self._is_mutable_init(stmt.value)
-                                ):
-                                    has_mutable_init = True
-
-                elif self._returns_new_instance(item, node.name):
-                    has_factory_methods = True
+        has_mutable_init = self._has_mutable_init(node)
+        has_factory_methods = self._has_factory_methods(node)
 
         if has_mutable_init and not has_factory_methods:
             violations.extend(
@@ -43,18 +26,66 @@ class FactoryMethodChecker:
 
         return violations
 
-    def _is_mutable_init(self, node: ast.AST) -> bool:
+    def _has_mutable_init(self, node: ast.ClassDef) -> bool:
+        """Check if class has mutable initialization."""
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+                return self._check_init_mutations(item)
+        return False
+
+    def _check_init_mutations(self, init_method: ast.FunctionDef) -> bool:
+        """Check if __init__ method has mutable assignments."""
+        for stmt in ast.walk(init_method):
+            if isinstance(stmt, ast.Assign) and self._has_mutable_self_assignment(stmt):
+                return True
+        return False
+
+    def _has_mutable_self_assignment(self, stmt: ast.Assign) -> bool:
+        """Check if assignment is a mutable self attribute."""
+        for target in stmt.targets:
+            if self._is_mutable_self_target(target, stmt.value):
+                return True
+        return False
+
+    def _is_mutable_self_target(self, target: ast.expr, value: ast.expr) -> bool:
+        """Check if target is a mutable self attribute assignment."""
+        return (
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+            and self._is_mutable_init(value)
+        )
+
+    def _has_factory_methods(self, node: ast.ClassDef) -> bool:
+        """Check if class has factory methods."""
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef) and self._returns_new_instance(
+                item, node.name
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _is_mutable_init(node: ast.AST) -> bool:
         """Check if initialization creates mutable state."""
         return isinstance(node, ast.List | ast.Dict | ast.Set)
 
-    def _returns_new_instance(self, func: ast.FunctionDef, class_name: str) -> bool:
+    @staticmethod
+    def _returns_new_instance(func: ast.FunctionDef, class_name: str) -> bool:
         """Check if function returns a new instance of the class."""
         for node in ast.walk(func):
             if isinstance(node, ast.Return) and node.value:
-                if isinstance(node.value, ast.Call):
-                    if (
-                        isinstance(node.value.func, ast.Name)
-                        and node.value.func.id == class_name
-                    ):
-                        return True
+                if FactoryMethodChecker._is_class_constructor_call(
+                    node.value, class_name
+                ):
+                    return True
         return False
+
+    @staticmethod
+    def _is_class_constructor_call(call_node: ast.expr, class_name: str) -> bool:
+        """Check if call is a constructor for the given class."""
+        return (
+            isinstance(call_node, ast.Call)
+            and isinstance(call_node.func, ast.Name)
+            and call_node.func.id == class_name
+        )
