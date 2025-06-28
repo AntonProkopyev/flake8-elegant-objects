@@ -204,17 +204,27 @@ ruff format flake8_elegant_objects/
 
 ```
 flake8_elegant_objects/
-├── __init__.py          # Main plugin entry point
-├── base.py              # Base classes and utilities
-├── no_er_name.py        # EO001-EO004: No "-er" names
-├── no_null.py           # EO005: No None usage
-├── no_constructor_code.py # EO006: No code in constructors
-├── no_getters_setters.py  # EO007: No getters/setters
-├── no_mutable_objects.py  # EO008: No mutable objects
-├── no_static.py         # EO009: No static methods
-├── no_type_discrimination.py # EO010: No isinstance/type casting
-├── no_public_methods_without_contracts.py # EO011: Contracts required
-├── no_impure_tests.py   # EO012: Only assertThat in tests
-├── no_orm.py            # EO013: No ORM/ActiveRecord
-└── no_implementation_inheritance.py # EO014: No implementation inheritance
+├── __init__.py              # Main plugin entry point
+├── __main__.py              # CLI interface
+├── base.py                  # Core types, error codes, and base classes
+├── no_constructor_code.py   # EO006: No code in constructors
+├── no_er_name.py           # EO001-EO004: No -er naming violations
+├── no_getters_setters.py   # EO007: No getter/setter methods
+├── no_implementation_inheritance.py  # EO014: No implementation inheritance
+├── no_impure_tests.py      # EO012: Test methods with single assertions
+├── no_null.py              # EO005: No None/null usage
+├── no_orm.py               # EO013: No ORM/ActiveRecord patterns
+├── no_public_methods_without_contracts.py  # EO011: Methods need contracts
+├── no_static.py            # EO009: No static methods
+├── no_type_discrimination.py  # EO010: No isinstance/type casting
+└── no_mutable_objects/     # EO008, EO015-EO027: Comprehensive mutability detection
+    ├── __init__.py         # Package initialization
+    ├── base.py             # Shared utilities and state tracking
+    ├── core.py             # Main orchestrator for all mutable object checks
+    ├── contract_checker.py # EO024: Immutability contract enforcement
+    ├── copy_on_write_checker.py  # EO025: Copy-on-write pattern validation
+    ├── deep_checker.py     # Cross-class mutation analysis
+    ├── factory_checker.py  # EO022: Factory method pattern validation
+    ├── pattern_detectors.py # EO026-EO027: Aliasing and defensive copy detection
+    └── shared_state_checker.py  # EO023: Shared mutable state detection
 ```
