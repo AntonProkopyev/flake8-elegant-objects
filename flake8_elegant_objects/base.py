@@ -152,13 +152,13 @@ class ElegantObjectsCore:
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
-        self._parent_map = {}
+        self._parent_map: dict[ast.AST, ast.AST | None] = {}
         self._build_parent_map(tree, None)
 
     def _build_parent_map(self, node: ast.AST, parent: ast.AST | None) -> None:
         """Build a map of nodes to their parents for better context."""
         if parent:
-            node._parent = parent
+            setattr(node, '_parent', parent)  # noqa: B010
         for child in ast.iter_child_nodes(node):
             self._build_parent_map(child, node)
 
@@ -178,10 +178,8 @@ class ElegantObjectsCore:
         if isinstance(node, ast.ClassDef):
             current_class = node
 
-        # Check principles on current node
         violations.extend(self._check_principles(node, current_class))
 
-        # Visit child nodes
         for child in ast.iter_child_nodes(node):
             violations.extend(self._visit(child, current_class))
 
