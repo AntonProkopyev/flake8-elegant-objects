@@ -87,7 +87,7 @@ class NoPublicMethodsWithoutContracts(Principle):
 
     def _is_protocol_or_abc(self, class_name: str, tree: ast.AST | None) -> bool:
         """Check if a class is a Protocol or ABC."""
-        if class_name in ("Protocol", "ABC", "ABCMeta"):
+        if class_name in {"Protocol", "ABC", "ABCMeta"}:
             return True
 
         if class_name.endswith("Protocol") or class_name.endswith("ABC"):

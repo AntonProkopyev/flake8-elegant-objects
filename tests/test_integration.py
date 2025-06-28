@@ -18,7 +18,7 @@ class TestIntegration:
         """Test detection of multiple violation types in one code sample."""
         code = """
 class DataManager:  # EO001 - -er class name
-    data = []  # EO008 - mutable class attribute
+    data = []  # EO015 - mutable class attribute
 
     def __init__(self):
         self.processed_data = []  # EO006 - code in constructor
@@ -41,7 +41,7 @@ class DataManager:  # EO001 - -er class name
         assert "EO005" in error_codes  # NoNull
         assert "EO006" in error_codes  # NoConstructorCode
         assert "EO007" in error_codes  # NoGettersSetters
-        assert "EO008" in error_codes  # NoMutableObjects
+        assert "EO015" in error_codes  # NoMutableObjects - class attribute
         assert "EO009" in error_codes  # Advanced - static method
         assert "EO010" in error_codes  # Advanced - isinstance
 
@@ -52,7 +52,7 @@ from dataclasses import dataclass
 
 @dataclass  # EO008 - mutable dataclass
 class UserManager:  # EO001 - -er class name
-    users = []  # EO008 - mutable class attribute
+    users = []  # EO015 - mutable class attribute
 
     def __init__(self, config):
         self.config = config
@@ -87,7 +87,8 @@ class UserManager:  # EO001 - -er class name
         assert any("EO005" in msg for msg in violation_messages)
         assert any("EO006" in msg for msg in violation_messages)
         assert any("EO007" in msg and "get_user" in msg for msg in violation_messages)
-        assert any("EO008" in msg for msg in violation_messages)
+        assert any("EO008" in msg for msg in violation_messages)  # dataclass
+        assert any("EO015" in msg for msg in violation_messages)  # class attribute
         assert any("EO009" in msg for msg in violation_messages)
 
     def test_clean_elegant_code(self) -> None:
@@ -135,7 +136,7 @@ class User:
 
 # Invalid patterns
 class DataProcessor:  # EO001 - -er name
-    cache = {}  # EO008 - mutable attribute
+    cache = {}  # EO015 - mutable attribute
 
     def get_name(self):  # EO007 - getter
         return None  # EO005 - None
@@ -151,7 +152,7 @@ class DataProcessor:  # EO001 - -er name
         )
         assert any("EO005" in msg for msg in violation_messages)
         assert any("EO007" in msg and "get_name" in msg for msg in violation_messages)
-        assert any("EO008" in msg for msg in violation_messages)
+        assert any("EO015" in msg for msg in violation_messages)
 
     def test_plugin_end_to_end(self) -> None:
         """Test complete plugin functionality end-to-end."""

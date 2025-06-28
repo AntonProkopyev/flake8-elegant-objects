@@ -28,48 +28,58 @@ class NoImpureTests:
         assertion_count = 0
 
         for stmt in node.body:
-            if isinstance(stmt, ast.Pass):
-                continue  # Allow pass statements
+            violation_found, is_assertion = self._analyze_statement(stmt, node.name)
 
-            elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
-                # Check if it's an assertion
-                if self._is_assertion_call(stmt.value):
-                    assertion_count += 1
-                    continue
-                else:
-                    # Non-assertion expression call
-                    violations.extend(
-                        violation(stmt, ErrorCodes.EO012.format(name=node.name))
-                    )
+            if violation_found:
+                violations.extend(violation_found)
 
-            elif isinstance(stmt, ast.Assert):
-                # Direct assert statement
+            if is_assertion:
                 assertion_count += 1
-                continue
 
-            elif isinstance(stmt, ast.With):
-                # Check for pytest.raises or similar context managers
-                if self._is_assertion_context_manager(stmt):
-                    assertion_count += 1
-                    continue
-                else:
-                    violations.extend(
-                        violation(stmt, ErrorCodes.EO012.format(name=node.name))
-                    )
-
-            else:
-                # Any other statement (assignments, etc.) is a violation
-                violations.extend(
-                    violation(stmt, ErrorCodes.EO012.format(name=node.name))
-                )
-
-        # Test must have exactly one assertion
-        if assertion_count == 0:
-            violations.extend(violation(node, ErrorCodes.EO012.format(name=node.name)))
-        elif assertion_count > 1:
-            violations.extend(violation(node, ErrorCodes.EO012.format(name=node.name)))
-
+        violations.extend(self._validate_assertion_count(assertion_count, node))
         return violations
+
+    def _analyze_statement(
+        self, stmt: ast.stmt, test_name: str
+    ) -> tuple[Violations, bool]:
+        """Analyze a statement and return violations and whether it's an assertion."""
+        if isinstance(stmt, ast.Pass):
+            return [], False
+
+        if isinstance(stmt, ast.Assert):
+            return [], True
+
+        if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+            return self._handle_expression_call(stmt, test_name)
+
+        if isinstance(stmt, ast.With):
+            return self._handle_with_statement(stmt, test_name)
+
+        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+
+    def _handle_expression_call(
+        self, stmt: ast.Expr, test_name: str
+    ) -> tuple[Violations, bool]:
+        """Handle expression call statements."""
+        if isinstance(stmt.value, ast.Call) and self._is_assertion_call(stmt.value):
+            return [], True
+        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+
+    def _handle_with_statement(
+        self, stmt: ast.With, test_name: str
+    ) -> tuple[Violations, bool]:
+        """Handle with statement for assertion context managers."""
+        if self._is_assertion_context_manager(stmt):
+            return [], True
+        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+
+    def _validate_assertion_count(
+        self, assertion_count: int, node: ast.FunctionDef | ast.AsyncFunctionDef
+    ) -> Violations:
+        """Validate that test has exactly one assertion."""
+        if assertion_count != 1:
+            return violation(node, ErrorCodes.EO012.format(name=node.name))
+        return []
 
     def _is_assertion_call(self, call: ast.Call) -> bool:
         """Check if a call is an assertion."""
