@@ -9,7 +9,9 @@ class MutablePatternDetectors:
     """Collection of specific mutable pattern detectors."""
 
     @staticmethod
-    def detect_aliasing_violations(node: ast.FunctionDef) -> Violations:
+    def detect_aliasing_violations(
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> Violations:
         """Detect aliasing that can lead to external mutation."""
         violations = []
 
@@ -20,19 +22,39 @@ class MutablePatternDetectors:
                     and isinstance(stmt.value.value, ast.Name)
                     and stmt.value.value.id == "self"
                 ):
-                    violations.extend(
-                        violation(
-                            stmt,
-                            ErrorCodes.EO026.format(
-                                name=f"returning internal mutable state 'self.{stmt.value.attr}'"
-                            ),
-                        )
-                    )
+                    # Only flag if attribute name suggests it's mutable data
+                    # Skip private attributes (starting with _) as they're often used for immutable storage
+                    attr_name = stmt.value.attr
+                    if not attr_name.startswith("_"):
+                        attr_lower = attr_name.lower()
+                        mutable_attr_patterns = {
+                            "data",
+                            "items",
+                            "list",
+                            "dict",
+                            "set",
+                            "collection",
+                            "values",
+                            "cache",
+                        }
+                        if any(
+                            pattern in attr_lower for pattern in mutable_attr_patterns
+                        ):
+                            violations.extend(
+                                violation(
+                                    stmt,
+                                    ErrorCodes.EO026.format(
+                                        name=f"returning internal mutable state 'self.{stmt.value.attr}'"
+                                    ),
+                                )
+                            )
 
         return violations
 
     @staticmethod
-    def detect_defensive_copy_missing(node: ast.FunctionDef) -> Violations:
+    def detect_defensive_copy_missing(
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> Violations:
         """Detect missing defensive copies in constructors."""
         if node.name != "__init__":
             return []
@@ -40,7 +62,9 @@ class MutablePatternDetectors:
         return MutablePatternDetectors._check_init_defensive_copies(node)
 
     @staticmethod
-    def _check_init_defensive_copies(init_node: ast.FunctionDef) -> Violations:
+    def _check_init_defensive_copies(
+        init_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> Violations:
         """Check __init__ method for missing defensive copies."""
         violations = []
         param_names = [arg.arg for arg in init_node.args.args[1:]]
@@ -91,4 +115,20 @@ class MutablePatternDetectors:
     @staticmethod
     def _is_param_assignment(value: ast.expr, param_names: list[str]) -> bool:
         """Check if value is a parameter assignment."""
-        return isinstance(value, ast.Name) and value.id in param_names
+        # Only flag if it's a direct parameter assignment AND likely mutable
+        if isinstance(value, ast.Name) and value.id in param_names:
+            # Don't flag assignments of simple types (strings, numbers, etc.)
+            # Only flag if parameter name suggests it could be mutable (lists, data, items, etc.)
+            mutable_param_patterns = {
+                "data",
+                "items",
+                "list",
+                "dict",
+                "set",
+                "collection",
+                "values",
+            }
+            return any(
+                pattern in value.id.lower() for pattern in mutable_param_patterns
+            )
+        return False

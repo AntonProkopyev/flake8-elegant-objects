@@ -396,3 +396,73 @@ class DocumentBuilder:
         violations = self._check_code(code)
         # Builder patterns may still trigger violations - this tests current behavior
         assert isinstance(violations, list)
+
+    def test_aliasing_violations_eo026(self) -> None:
+        """Test detection of aliasing violations (EO026)."""
+        code = """
+class DataContainer:
+    def __init__(self):
+        self.data = []
+
+    def get_data(self):
+        return self.data  # EO026: Exposing internal mutable state
+
+    def get_items(self):
+        return self.items  # EO026: Exposing internal mutable state
+"""
+        violations = self._check_code(code)
+        aliasing_violations = [v for v in violations if "EO026" in v]
+        assert len(aliasing_violations) >= 2
+        assert any("self.data" in v for v in aliasing_violations)
+        assert any("self.items" in v for v in aliasing_violations)
+
+    def test_defensive_copy_violations_eo027(self) -> None:
+        """Test detection of missing defensive copies (EO027)."""
+        code = """
+class Container:
+    def __init__(self, items, data):
+        self.items = items  # EO027: Should copy mutable parameter
+        self.data = data    # EO027: Should copy mutable parameter
+        self.count = 0      # OK: immutable assignment
+
+    def update(self, value):
+        self.value = value  # OK: not in __init__
+"""
+        violations = self._check_code(code)
+        defensive_violations = [v for v in violations if "EO027" in v]
+        assert len(defensive_violations) >= 2
+        assert any("items" in v for v in defensive_violations)
+        assert any("data" in v for v in defensive_violations)
+
+    def test_no_false_positives_defensive_copy(self) -> None:
+        """Test that proper defensive copies don't trigger violations."""
+        code = """
+class Container:
+    def __init__(self, items):
+        self.items = tuple(items)  # OK: defensive copy
+        self.data = []             # OK: new mutable object
+
+    def process(self, data):
+        self.temp = data  # OK: not __init__
+"""
+        violations = self._check_code(code)
+        defensive_violations = [v for v in violations if "EO027" in v]
+        assert len(defensive_violations) == 0
+
+    def test_no_false_positives_aliasing(self) -> None:
+        """Test that safe returns don't trigger aliasing violations."""
+        code = """
+class Container:
+    def __init__(self):
+        self.data = []
+
+    def size(self):
+        return len(self.data)  # OK: not returning mutable state
+
+    def process(self):
+        result = self.data.copy()  # OK: not a return
+        return result
+"""
+        violations = self._check_code(code)
+        aliasing_violations = [v for v in violations if "EO026" in v]
+        assert len(aliasing_violations) == 0

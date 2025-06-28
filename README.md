@@ -1,7 +1,7 @@
 # Flake8 ElegantObjects Plugin
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
-[![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)

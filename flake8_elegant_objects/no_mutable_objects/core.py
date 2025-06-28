@@ -8,6 +8,7 @@ from .contract_checker import ImmutabilityContractChecker
 from .copy_on_write_checker import CopyOnWriteChecker
 from .deep_checker import DeepMutabilityChecker
 from .factory_checker import FactoryMethodChecker
+from .pattern_detectors import MutablePatternDetectors
 from .shared_state_checker import SharedMutableStateChecker
 
 
@@ -34,6 +35,10 @@ class NoMutableObjects:
         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
+            )
+            violations.extend(MutablePatternDetectors.detect_aliasing_violations(node))
+            violations.extend(
+                MutablePatternDetectors.detect_defensive_copy_missing(node)
             )
             if source.current_class:
                 violations.extend(
