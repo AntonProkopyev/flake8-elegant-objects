@@ -21,7 +21,7 @@ class ErrorCodes:
     EO005 = "EO005 Null (None) usage violates EO principle (avoid None)"
     EO006 = "EO006 Code in constructor violates EO principle (constructors should only assign parameters)"
     EO007 = "EO007 Getter/setter method '{name}' violates EO principle (avoid getters/setters)"
-    EO008 = "EO008 Mutable object violation: '{name}' should be immutable"
+    EO008 = "EO008 Mutable object violation: {name}"
     EO009 = (
         "EO009 Static method '{name}' violates EO principle (no static methods allowed)"
     )
@@ -139,6 +139,15 @@ class ElegantObjectsCore:
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
+        self._parent_map = {}
+        self._build_parent_map(tree, None)
+
+    def _build_parent_map(self, node: ast.AST, parent: ast.AST | None) -> None:
+        """Build a map of nodes to their parents for better context."""
+        if parent:
+            node._parent = parent
+        for child in ast.iter_child_nodes(node):
+            self._build_parent_map(child, node)
 
     def check_violations(self) -> list[Violation]:
         """Check for all violations in the AST tree."""
