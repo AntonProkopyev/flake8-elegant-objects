@@ -17,7 +17,7 @@ class MutabilityVisitor(ast.NodeVisitor):
     def visit(self, node: ast.AST) -> None:
         """Visit nodes and set parent references."""
         for child in ast.iter_child_nodes(node):
-            setattr(child, '_parent', node)  # noqa: B010
+            setattr(child, "_parent", node)  # noqa: B010
         self.generic_visit(node)
 
 

@@ -134,6 +134,7 @@ select = [
     "ERA", # eradicate
     "PL",  # pylint
     "RUF", # ruff-specific rules
+    "C90", # mccabe complexity
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)
@@ -158,6 +159,12 @@ single-line-exclusions = ["typing"]
 "flake8_elegant_objects/base.py" = [
     "PLC0415",
 ] # late imports to avoid circular dependencies
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-nested-blocks = 5
 
 [tool.ruff.format]
 quote-style = "double"

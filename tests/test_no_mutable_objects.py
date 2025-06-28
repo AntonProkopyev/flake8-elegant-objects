@@ -42,7 +42,9 @@ class AnotherMutable:
 """
         violations = self._check_code(code)
         assert len(violations) == 2
-        assert all("EO008" in v for v in violations)  # Dataclass violations still use EO008
+        assert all(
+            "EO008" in v for v in violations
+        )  # Dataclass violations still use EO008
         assert any("MutableUser" in v for v in violations)
         assert any("AnotherMutable" in v for v in violations)
 
@@ -129,7 +131,9 @@ class UnsafeHash:
     data: str
 """
         violations = self._check_code(code)
-        mutable_violations = [v for v in violations if "EO008" in v]  # Dataclass violations
+        mutable_violations = [
+            v for v in violations if "EO008" in v
+        ]  # Dataclass violations
         assert len(mutable_violations) == 2
         assert any("ExplicitlyMutable" in v for v in mutable_violations)
         assert any("UnsafeHash" in v for v in mutable_violations)
@@ -163,7 +167,9 @@ class DataProcessor:
 """
         violations = self._check_code(code)
         # Enhanced checker now detects mutable instance attributes in __init__
-        mutable_violations = [v for v in violations if "EO016" in v]  # Instance attribute violations
+        mutable_violations = [
+            v for v in violations if "EO016" in v
+        ]  # Instance attribute violations
         assert len(mutable_violations) >= 2  # At least the two __init__ violations
 
     def test_mutation_in_methods(self) -> None:
@@ -183,7 +189,9 @@ class DataProcessor:
         # Should have instance attribute violation (EO016), mutation violation (EO017), and mutating method call (EO019)
         assert len(violations) >= 2
         assert any("EO016" in v for v in violations)  # Instance attribute
-        assert any("EO017" in v or "EO019" in v for v in violations)  # Mutation or method call
+        assert any(
+            "EO017" in v or "EO019" in v for v in violations
+        )  # Mutation or method call
 
     def test_augmented_assignment_mutation(self) -> None:
         """Test detection of augmented assignments."""
@@ -245,7 +253,6 @@ class UserManager:
         # Should have instance attribute (EO016) and subscript mutation (EO020)
         assert any("EO016" in v for v in violations)  # Instance attribute
         # FIXME: EO020 subscript mutations not detected - needs proper AST parent tracking
-        # assert any("EO020" in v for v in violations)  # Subscript assignment
 
     def test_nested_mutable_structures(self) -> None:
         """Test detection of nested mutable data structures."""
@@ -346,8 +353,25 @@ class SafeCollection:
 """
         violations = self._check_code(code)
         # Immutable patterns should not have any mutable object violations
-        mutable_codes = ["EO008", "EO015", "EO016", "EO017", "EO018", "EO019", "EO020", "EO021", "EO022", "EO023", "EO024", "EO025", "EO026", "EO027"]
-        mutable_violations = [v for v in violations if any(code in v for code in mutable_codes)]
+        mutable_codes = [
+            "EO008",
+            "EO015",
+            "EO016",
+            "EO017",
+            "EO018",
+            "EO019",
+            "EO020",
+            "EO021",
+            "EO022",
+            "EO023",
+            "EO024",
+            "EO025",
+            "EO026",
+            "EO027",
+        ]
+        mutable_violations = [
+            v for v in violations if any(code in v for code in mutable_codes)
+        ]
         assert len(mutable_violations) == 0
 
     def test_builder_pattern_acceptable(self) -> None:

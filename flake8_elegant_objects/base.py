@@ -158,7 +158,7 @@ class ElegantObjectsCore:
     def _build_parent_map(self, node: ast.AST, parent: ast.AST | None) -> None:
         """Build a map of nodes to their parents for better context."""
         if parent:
-            setattr(node, '_parent', parent)  # noqa: B010
+            setattr(node, "_parent", parent)  # noqa: B010
         for child in ast.iter_child_nodes(node):
             self._build_parent_map(child, node)
 

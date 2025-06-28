@@ -67,45 +67,76 @@ class NoMutableObjects:
         """Check for mutable class violations."""
         violations: Violations = []
 
+        violations.extend(self._check_dataclass_mutability(node))
+        violations.extend(self._check_class_attributes(node))
+
+        return violations
+
+    def _check_dataclass_mutability(self, node: ast.ClassDef) -> Violations:
+        """Check if dataclass is properly frozen."""
+        has_dataclass, has_frozen = self._analyze_dataclass_decorators(
+            node.decorator_list
+        )
+
+        if has_dataclass and not has_frozen:
+            return violation(
+                node, ErrorCodes.EO008.format(name=f"@dataclass class {node.name}")
+            )
+        return []
+
+    def _analyze_dataclass_decorators(
+        self, decorators: list[ast.expr]
+    ) -> tuple[bool, bool]:
+        """Analyze decorators for dataclass and frozen status."""
         has_dataclass = False
         has_frozen = False
 
-        for decorator in node.decorator_list:
+        for decorator in decorators:
             if isinstance(decorator, ast.Name) and decorator.id == "dataclass":
                 has_dataclass = True
-            elif isinstance(decorator, ast.Call):
-                if (
-                    isinstance(decorator.func, ast.Name)
-                    and decorator.func.id == "dataclass"
-                ):
-                    has_dataclass = True
-                    for keyword in decorator.keywords:
-                        if keyword.arg == "frozen" and isinstance(
-                            keyword.value, ast.Constant
-                        ):
-                            if keyword.value.value is True:
-                                has_frozen = True
+            elif isinstance(decorator, ast.Call) and self._is_dataclass_call(decorator):
+                has_dataclass = True
+                has_frozen = self._check_frozen_keyword(decorator.keywords)
 
-        if has_dataclass and not has_frozen:
-            violations.extend(
-                violation(
-                    node, ErrorCodes.EO008.format(name=f"@dataclass class {node.name}")
-                )
-            )
+        return has_dataclass, has_frozen
+
+    def _is_dataclass_call(self, decorator: ast.Call) -> bool:
+        """Check if decorator call is a dataclass."""
+        return isinstance(decorator.func, ast.Name) and decorator.func.id == "dataclass"
+
+    def _check_frozen_keyword(self, keywords: list[ast.keyword]) -> bool:
+        """Check if frozen=True is set in dataclass keywords."""
+        for keyword in keywords:
+            if (
+                keyword.arg == "frozen"
+                and isinstance(keyword.value, ast.Constant)
+                and keyword.value.value is True
+            ):
+                return True
+        return False
+
+    def _check_class_attributes(self, node: ast.ClassDef) -> Violations:
+        """Check for mutable class attributes."""
+        violations: Violations = []
 
         for stmt in node.body:
             if isinstance(stmt, ast.Assign):
-                for target in stmt.targets:
-                    if isinstance(target, ast.Name):
-                        if is_mutable_type(stmt.value):
-                            violations.extend(
-                                violation(
-                                    stmt,
-                                    ErrorCodes.EO015.format(
-                                        name=f"class attribute '{target.id}'"
-                                    ),
-                                )
-                            )
+                violations.extend(self._check_assignment_targets(stmt))
+
+        return violations
+
+    def _check_assignment_targets(self, stmt: ast.Assign) -> Violations:
+        """Check assignment targets for mutable types."""
+        violations: Violations = []
+
+        for target in stmt.targets:
+            if isinstance(target, ast.Name) and is_mutable_type(stmt.value):
+                violations.extend(
+                    violation(
+                        stmt,
+                        ErrorCodes.EO015.format(name=f"class attribute '{target.id}'"),
+                    )
+                )
 
         return violations
 
