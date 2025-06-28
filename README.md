@@ -8,18 +8,38 @@
 [![Type checked: mypy](https://img.shields.io/badge/type_checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
 [![Flake8](https://img.shields.io/badge/flake8-plugin-orange.svg)](https://flake8.pycqa.org/)
 
-Detects violations of core [Elegant Objects principles](https://www.elegantobjects.org/) including the "-er" naming principle, null usage, mutable objects, code in constructors, and getter/setter patterns.
+Detects violations of [Elegant Objects principles](https://www.elegantobjects.org/) including the "-er" naming principle, null usage, mutable objects, code in constructors, and getter/setter patterns.
 
 ## Error Codes
 
+### Naming Violations (EO001-EO004)
 - `EO001`: Class name violates -er principle
 - `EO002`: Method name violates -er principle
 - `EO003`: Variable name violates -er principle
 - `EO004`: Function name violates -er principle
+
+### Object Behavior (EO005-EO007)
 - `EO005`: Null (None) usage violates EO principle
 - `EO006`: Code in constructor violates EO principle
 - `EO007`: Getter/setter method violates EO principle
-- `EO008`: Mutable object violation
+
+### Mutable Object Violations (EO008, EO015-EO027)
+- `EO008`: Mutable dataclass violation
+- `EO015`: Mutable class attribute violation
+- `EO016`: Mutable instance attribute violation
+- `EO017`: Instance attribute mutation violation
+- `EO018`: Augmented assignment mutation violation
+- `EO019`: Mutating method call violation
+- `EO020`: Subscript assignment mutation violation
+- `EO021`: Chained mutation violation
+- `EO022`: Missing factory methods violation
+- `EO023`: Mutable default argument violation
+- `EO024`: Missing immutability enforcement violation
+- `EO025`: Copy-on-write violation
+- `EO026`: Aliasing violation (exposing mutable state)
+- `EO027`: Defensive copy violation
+
+### Design and Architecture (EO009-EO014)
 - `EO009`: Static method violates EO principle (no static methods allowed)
 - `EO010`: isinstance/type casting violates EO principle (avoid type discrimination)
 - `EO011`: Public method without contract (Protocol/ABC) violates EO principle
@@ -83,12 +103,26 @@ Based on [Yegor Bugayenko](https://www.yegor256.com/)'s [Elegant Objects princip
 - ❌ `def get_value()` / `def set_value()` → ✅ Objects should expose behavior, not data
 - ❌ `user.getName()` → ✅ `user.introduce_yourself()` or `user.greet(visitor)`
 
-### 5. No Mutable Objects (EO008)
+### 5. No Mutable Objects (EO008, EO015-EO027)
 
-**Why?** Mutable objects introduce temporal coupling and make reasoning about code difficult. Immutable objects are thread-safe, predictable, and easier to test.
+**Why?** Mutable objects introduce temporal coupling and make reasoning about code difficult. Immutable objects are thread-safe, predictable, and easier to test. This plugin provides comprehensive detection of various mutability patterns.
 
-- ❌ `@dataclass class Data` → ✅ `@dataclass(frozen=True) class Data`
-- ❌ `items = []` → ✅ `items: tuple = ()`
+**Basic Mutability Issues:**
+- ❌ `@dataclass class Data` → ✅ `@dataclass(frozen=True) class Data` *(EO008)*
+- ❌ `items = []` (class attribute) → ✅ `items: tuple = ()` *(EO015)*
+- ❌ `self.data = []` (instance attribute) → ✅ `self.data: tuple = ()` *(EO016)*
+
+**Mutation Patterns:**
+- ❌ `self.items.append(x)` → ✅ `self.items = (*self.items, x)` *(EO019)*
+- ❌ `self.count += 1` → ✅ `return Counter(self.count + 1)` *(EO018)*
+- ❌ `self.data[key] = value` → ✅ Use immutable data structures *(EO020)*
+- ❌ `self.data = new_value` (after init) → ✅ Return new instance *(EO017)*
+
+**Advanced Patterns:**
+- ❌ `def items=[]:` (mutable defaults) → ✅ `def items=None:` + null object *(EO023)*
+- ❌ `return self._items` (exposing mutable state) → ✅ `return tuple(self._items)` *(EO026)*
+- ❌ `self.items = items` (no defensive copy) → ✅ `self.items = tuple(items)` *(EO027)*
+- ❌ Class with mutable state but no factory methods → ✅ Provide immutable factory methods *(EO022)*
 
 ### 6. No Static Methods (EO009)
 

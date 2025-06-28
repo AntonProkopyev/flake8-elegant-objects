@@ -103,7 +103,7 @@ class NoMutableObjects:
                             violations.extend(
                                 violation(
                                     stmt,
-                                    ErrorCodes.EO008.format(
+                                    ErrorCodes.EO015.format(
                                         name=f"class attribute '{target.id}'"
                                     ),
                                 )
@@ -138,7 +138,7 @@ class NoMutableObjects:
                             violations.extend(
                                 violation(
                                     stmt,
-                                    ErrorCodes.EO008.format(
+                                    ErrorCodes.EO016.format(
                                         name=f"instance attribute 'self.{target.attr}'"
                                     ),
                                 )
@@ -171,7 +171,7 @@ class NoMutableObjects:
                             violations.extend(
                                 violation(
                                     node,
-                                    ErrorCodes.EO008.format(
+                                    ErrorCodes.EO017.format(
                                         name=f"mutation of 'self.{target.attr}'"
                                     ),
                                 )
@@ -199,7 +199,7 @@ class NoMutableObjects:
             violations.extend(
                 violation(
                     node,
-                    ErrorCodes.EO008.format(
+                    ErrorCodes.EO018.format(
                         name=f"augmented assignment to 'self.{node.target.attr}'"
                     ),
                 )
@@ -244,7 +244,7 @@ class NoMutableObjects:
             violations.extend(
                 violation(
                     node,
-                    ErrorCodes.EO008.format(
+                    ErrorCodes.EO019.format(
                         name=f"call to mutating method 'self.{node.func.value.attr}.{node.func.attr}()'"
                     ),
                 )
@@ -273,7 +273,7 @@ class NoMutableObjects:
                 violations.extend(
                     violation(
                         parent,
-                        ErrorCodes.EO008.format(
+                        ErrorCodes.EO020.format(
                             name=f"subscript assignment to 'self.{node.value.attr}[...]'"
                         ),
                     )
@@ -427,7 +427,7 @@ class MutationDetector(ast.NodeVisitor):
             # Check for chained mutations like self.data.get('key', []).append(value)
             if self._is_chained_mutation(node):
                 self.violations.extend(
-                    violation(node, ErrorCodes.EO008.format(name="chained mutation"))
+                    violation(node, ErrorCodes.EO021.format(name="chained mutation"))
                 )
         self.generic_visit(node)
 
@@ -483,7 +483,7 @@ class FactoryMethodChecker:
             violations.extend(
                 violation(
                     node,
-                    ErrorCodes.EO008.format(
+                    ErrorCodes.EO022.format(
                         name=f"class {node.name} with mutable state but no immutable factory methods"
                     ),
                 )
@@ -523,7 +523,7 @@ class SharedMutableStateChecker:
                         violations.extend(
                             violation(
                                 item,
-                                ErrorCodes.EO008.format(
+                                ErrorCodes.EO023.format(
                                     name=f"mutable default argument in {item.name}"
                                 ),
                             )
@@ -580,7 +580,7 @@ class ImmutabilityContractChecker:
             violations.extend(
                 violation(
                     node,
-                    ErrorCodes.EO008.format(
+                    ErrorCodes.EO024.format(
                         name=f"class {node.name} with mutable attributes but no immutability enforcement"
                     ),
                 )
@@ -618,7 +618,7 @@ class CopyOnWriteChecker:
                             violations.extend(
                                 violation(
                                     stmt,
-                                    ErrorCodes.EO008.format(
+                                    ErrorCodes.EO025.format(
                                         name=f"mutation in {node.name} without returning new instance"
                                     ),
                                 )
@@ -661,7 +661,7 @@ class MutablePatternDetectors:
                     violations.extend(
                         violation(
                             stmt,
-                            ErrorCodes.EO008.format(
+                            ErrorCodes.EO026.format(
                                 name=f"returning internal mutable state 'self.{stmt.value.attr}'"
                             ),
                         )
@@ -691,7 +691,7 @@ class MutablePatternDetectors:
                                 violations.extend(
                                     violation(
                                         stmt,
-                                        ErrorCodes.EO008.format(
+                                        ErrorCodes.EO027.format(
                                             name=f"possible mutable parameter '{stmt.value.id}' assigned without defensive copy"
                                         ),
                                     )

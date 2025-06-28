@@ -21,7 +21,7 @@ class ErrorCodes:
     EO005 = "EO005 Null (None) usage violates EO principle (avoid None)"
     EO006 = "EO006 Code in constructor violates EO principle (constructors should only assign parameters)"
     EO007 = "EO007 Getter/setter method '{name}' violates EO principle (avoid getters/setters)"
-    EO008 = "EO008 Mutable object violation: {name}"
+    EO008 = "EO008 Mutable dataclass violation: {name}"
     EO009 = (
         "EO009 Static method '{name}' violates EO principle (no static methods allowed)"
     )
@@ -30,6 +30,19 @@ class ErrorCodes:
     EO012 = "EO012 Test method '{name}' contains non-assertThat statements (only assertThat allowed)"
     EO013 = "EO013 ORM/ActiveRecord pattern '{name}' violates EO principle"
     EO014 = "EO014 Implementation inheritance violates EO principle (class '{name}' inherits from non-abstract class)"
+    EO015 = "EO015 Mutable class attribute violation: {name}"
+    EO016 = "EO016 Mutable instance attribute violation: {name}"
+    EO017 = "EO017 Instance attribute mutation violation: {name}"
+    EO018 = "EO018 Augmented assignment mutation violation: {name}"
+    EO019 = "EO019 Mutating method call violation: {name}"
+    EO020 = "EO020 Subscript assignment mutation violation: {name}"
+    EO021 = "EO021 Chained mutation violation: {name}"
+    EO022 = "EO022 Missing factory methods violation: {name}"
+    EO023 = "EO023 Mutable default argument violation: {name}"
+    EO024 = "EO024 Missing immutability enforcement violation: {name}"
+    EO025 = "EO025 Copy-on-write violation: {name}"
+    EO026 = "EO026 Aliasing violation (exposing mutable state): {name}"
+    EO027 = "EO027 Defensive copy violation: {name}"
 
 
 class Violation:
