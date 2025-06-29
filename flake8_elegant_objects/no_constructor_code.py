@@ -39,7 +39,21 @@ class NoConstructorCode:
                         violations.extend(violation(stmt, ErrorCodes.EO006))
                 else:
                     violations.extend(violation(stmt, ErrorCodes.EO006))
+            elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+                if self._is_super_call(stmt.value):
+                    continue
+                violations.extend(violation(stmt, ErrorCodes.EO006))
             elif not isinstance(stmt, ast.Pass):  # Allow pass statements
                 violations.extend(violation(stmt, ErrorCodes.EO006))
 
         return violations
+
+    def _is_super_call(self, call: ast.Call) -> bool:
+        """Check if a call is a super() call."""
+        if isinstance(call.func, ast.Name) and call.func.id == "super":
+            return True
+        if isinstance(call.func, ast.Attribute) and isinstance(
+            call.func.value, ast.Call
+        ):
+            return self._is_super_call(call.func.value)
+        return False
