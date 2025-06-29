@@ -131,3 +131,64 @@ class DataContainer:
         violations = self._check_code(code)
         assert len(violations) == 2
         assert all("EO006" in v for v in violations)
+
+    def test_valid_constructor_with_super_call(self) -> None:
+        """Test that super() calls in constructors are allowed."""
+        code = """
+class Parent:
+    def __init__(self, name):
+        self.name = name
+
+class Child(Parent):
+    def __init__(self, name, age):
+        super().__init__(name)
+        self.age = age
+
+class GrandChild(Child):
+    def __init__(self, name, age, grade):
+        super().__init__(name, age)
+        self.grade = grade
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_valid_constructor_with_super_call_variations(self) -> None:
+        """Test various forms of super() calls are allowed."""
+        code = """
+class Base:
+    def __init__(self):
+        pass
+
+class Derived(Base):
+    def __init__(self):
+        super().__init__()
+
+class DerivedWithArgs(Base):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+class ExplicitSuper(Base):
+    def __init__(self):
+        super(ExplicitSuper, self).__init__()
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_constructor_with_super_and_invalid_code(self) -> None:
+        """Test that super() calls are allowed but other code violations are still detected."""
+        code = """
+class Parent:
+    def __init__(self, name):
+        self.name = name
+
+class Child(Parent):
+    def __init__(self, name, items):
+        super().__init__(name)
+        self.items = items
+        self.count = len(items)  # This should trigger violation
+        print("Child initialized")  # This should trigger violation
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 2
+        assert all("EO006" in v for v in violations)
