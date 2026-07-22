@@ -4,7 +4,15 @@ import ast
 import re
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+from .base import (
+    ErrorCodes,
+    Instance,
+    Principle,
+    Source,
+    Violations,
+    is_method,
+    violation,
+)
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ASSIGN = Instance(ast.Assign)
@@ -17,7 +25,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoErName:
+class NoErName(Principle):
     """Checks for naming violations in classes, methods, variables, and functions."""
 
     # The principle names readers, parsers, controllers, sorters "and so on",

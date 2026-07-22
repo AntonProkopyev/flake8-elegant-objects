@@ -3,7 +3,7 @@
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 ATTRIBUTE = Instance(ast.Attribute)
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
@@ -15,7 +15,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoStatic:
+class NoStatic(Principle):
     """Checks for static method violations (EO009)."""
 
     STATIC_DECORATORS: ClassVar[set[str]] = {

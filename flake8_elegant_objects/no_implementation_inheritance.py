@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 ATTRIBUTE = Instance(ast.Attribute)
 CLASS_DEF = Instance(ast.ClassDef)
@@ -12,7 +12,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoImplementationInheritance:
+class NoImplementationInheritance(Principle):
     """Checks for implementation inheritance violations (EO014)."""
 
     def check(self, source: Source) -> Violations:

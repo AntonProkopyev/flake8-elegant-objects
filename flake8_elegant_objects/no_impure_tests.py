@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
     ast.FunctionDef,
@@ -21,7 +21,7 @@ STRING = Instance(str)
 
 
 @final
-class NoImpureTests:
+class NoImpureTests(Principle):
     """Checks for impure test methods violations (EO012)."""
 
     def check(self, source: Source) -> Violations:

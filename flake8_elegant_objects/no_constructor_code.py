@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+from .base import (
+    ErrorCodes,
+    Instance,
+    Principle,
+    Source,
+    Violations,
+    is_method,
+    violation,
+)
 
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
     ast.FunctionDef,
@@ -20,7 +28,7 @@ STRING = Instance(str)
 
 
 @final
-class NoConstructorCode:
+class NoConstructorCode(Principle):
     """Checks for code in constructors beyond parameter assignments (EO006)."""
 
     def check(self, source: Source) -> Violations:

@@ -8,7 +8,7 @@ stopped being one object.
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 MAX_ATTRIBUTES = 4
 
@@ -24,7 +24,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoOpenClasses:
+class NoOpenClasses(Principle):
     """Checks for non-final classes (EO028) and overweight classes (EO029)."""
 
     CONTRACT_BASES: ClassVar[set[str]] = {"ABC", "ABCMeta", "Protocol"}

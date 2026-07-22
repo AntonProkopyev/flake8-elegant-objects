@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 ATTRIBUTE = Instance(ast.Attribute)
 CALL = Instance(ast.Call)
@@ -18,7 +18,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoOrm:
+class NoOrm(Principle):
     """Checks for ORM/ActiveRecord pattern violations (EO013)."""
 
     def check(self, source: Source) -> Violations:

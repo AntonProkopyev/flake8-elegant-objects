@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+from .base import (
+    ErrorCodes,
+    Instance,
+    Principle,
+    Source,
+    Violations,
+    is_method,
+    violation,
+)
 
 ATTRIBUTE = Instance(ast.Attribute)
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
@@ -15,7 +23,7 @@ RETURN = Instance(ast.Return)
 
 
 @final
-class NoAccessMethods:
+class NoAccessMethods(Principle):
     """Checks for getter/setter methods (EO007)."""
 
     def check(self, source: Source) -> Violations:

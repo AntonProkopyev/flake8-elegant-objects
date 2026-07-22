@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+from .base import (
+    ErrorCodes,
+    Instance,
+    Principle,
+    Source,
+    Violations,
+    is_method,
+    violation,
+)
 
 ATTRIBUTE = Instance(ast.Attribute)
 CLASS_DEF = Instance(ast.ClassDef)
@@ -16,7 +24,7 @@ NAME = Instance(ast.Name)
 
 
 @final
-class NoPublicMethodsWithoutContracts:
+class NoPublicMethodsWithoutContracts(Principle):
     """Check that public methods are defined by contracts (Protocol/ABC)."""
 
     def check(self, source: Source) -> Violations:

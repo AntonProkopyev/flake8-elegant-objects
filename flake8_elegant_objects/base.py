@@ -1,6 +1,7 @@
 """Base classes and protocols for Elegant Objects checkers."""
 
 import ast
+from dataclasses import dataclass, field
 from typing import Generic, Protocol, TypeGuard, TypeVar, final
 
 Kind = TypeVar("Kind")
@@ -81,25 +82,18 @@ class Instance(Generic[Kind]):
 
 
 @final
+@dataclass(frozen=True)
 class Violation:
-    """Represents a detected violation."""
+    """One violation, at the place it was found.
 
-    def __init__(self, line: int, column: int, message: str) -> None:
-        self._line = line
-        self._column = column
-        self._message = message
+    The three readers this used to carry were properties over private
+    fields, which is the getter shape EO007 exists to refuse. Frozen
+    fields say the same thing without the ceremony.
+    """
 
-    @property
-    def line(self) -> int:
-        return self._line
-
-    @property
-    def column(self) -> int:
-        return self._column
-
-    @property
-    def message(self) -> str:
-        return self._message
+    line: int
+    column: int
+    message: str
 
 
 Violations = list[Violation]
@@ -126,36 +120,14 @@ class Parents:
 
 
 @final
+@dataclass(frozen=True)
 class Source:
-    """Aggregation of AST node and current class context."""
+    """One node, with the context a principle needs to judge it."""
 
-    def __init__(
-        self,
-        node: ast.AST,
-        current_class: ast.ClassDef | None = None,
-        tree: ast.AST | None = None,
-        parents: "Parents | None" = None,
-    ) -> None:
-        self._node = node
-        self._current_class = current_class
-        self._tree = tree
-        self._parents = parents
-
-    @property
-    def node(self) -> ast.AST:
-        return self._node
-
-    @property
-    def current_class(self) -> ast.ClassDef | None:
-        return self._current_class
-
-    @property
-    def tree(self) -> ast.AST | None:
-        return self._tree
-
-    @property
-    def parents(self) -> "Parents":
-        return self._parents or Parents({})
+    node: ast.AST
+    current_class: ast.ClassDef | None = None
+    tree: ast.AST | None = None
+    parents: Parents = field(default_factory=lambda: Parents({}))
 
 
 class Principle(Protocol):

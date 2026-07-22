@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Instance, Parents, Source, Violations, violation
+from ..base import (
+    ErrorCodes,
+    Instance,
+    Parents,
+    Principle,
+    Source,
+    Violations,
+    violation,
+)
 from .base import MUTABLE_TYPE
 from .copy_on_write_checker import CopyOnWrite
 from .deep_checker import DeepMutability
@@ -26,7 +34,7 @@ CONSTANT = Instance(ast.Constant)
 
 
 @final
-class NoMutableObjects:
+class NoMutableObjects(Principle):
     """Checks for mutable object violations (EO008) with enhanced detection."""
 
     def check(self, source: Source) -> Violations:

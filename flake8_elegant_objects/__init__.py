@@ -22,12 +22,10 @@ class ElegantObjectsPlugin:
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
-        self._core = ElegantObjectsCore(tree)
 
     def run(self) -> Iterator[tuple[int, int, str, type["ElegantObjectsPlugin"]]]:
         """Run the checker and yield errors."""
-        violations = self._core.check_violations()
-        for violation in violations:
+        for violation in ElegantObjectsCore(self.tree).check_violations():
             yield (violation.line, violation.column, violation.message, type(self))
 
 

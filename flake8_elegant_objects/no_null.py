@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from types import NoneType
 from typing import final
 
-from .base import ErrorCodes, Instance, Source, Violations, violation
+from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ARG = Instance(ast.arg)
@@ -24,7 +24,7 @@ SCOPE: Instance[ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda] = Instance(
 
 
 @final
-class NoNull:
+class NoNull(Principle):
     """Checks for None usage violations (EO005)."""
 
     def check(self, source: Source) -> Violations:
