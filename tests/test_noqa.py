@@ -53,8 +53,16 @@ class TestInstance:
 
     def test_covers_a_union_of_types(self) -> None:
         """A union of types is covered by any of its members."""
-        kinds = Instance(ast.FunctionDef | ast.AsyncFunctionDef)
+        kinds: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+            ast.FunctionDef,
+            ast.AsyncFunctionDef,
+        ))
         assert kinds.covers(ast.parse("def f(): pass").body[0])
+
+    def test_narrows_for_the_type_checker(self) -> None:
+        """The answer is a TypeGuard, so callers keep their narrowing."""
+        node = ast.parse("class A: pass").body[0]
+        assert Instance(ast.ClassDef).covers(node) and node.name == "A"
 
     def test_covers_a_tuple_of_types(self) -> None:
         """A tuple of types is covered by any of its members."""

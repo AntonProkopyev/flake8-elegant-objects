@@ -1,8 +1,9 @@
 """Base classes and protocols for Elegant Objects checkers."""
 
 import ast
-from types import UnionType
-from typing import Protocol, final
+from typing import Generic, Protocol, TypeGuard, TypeVar, final
+
+Kind = TypeVar("Kind")
 
 
 @final
@@ -59,19 +60,22 @@ class ErrorCodes:
 
 
 @final
-class Instance:
+class Instance(Generic[Kind]):
     """A type, asked whether something is one of it.
 
     Type discrimination cannot leave a linter that reads syntax trees: the
     nodes of ast carry no polymorphic answer to "are you a name or a call".
     What it can do is live in one place. This is that place, and the single
     suppression below is the whole of it.
+
+    The answer is a TypeGuard so that callers keep the narrowing they had
+    from isinstance, which a plain bool would have taken away.
     """
 
-    def __init__(self, kind: type | tuple[type, ...] | UnionType) -> None:
+    def __init__(self, kind: type[Kind] | tuple[type[Kind], ...]) -> None:
         self._kind = kind
 
-    def covers(self, node: object) -> bool:
+    def covers(self, node: object) -> TypeGuard[Kind]:
         """Answer whether the given object is of this type."""
         return isinstance(node, self._kind)  # noqa: EO010
 
