@@ -194,3 +194,18 @@ def test_cents_are_counted(self):
         violations = self._check_code(code)
         assert len(violations) == 1
         assert "one assertion" in violations[0]
+
+    def test_call_on_a_call_terminates(self) -> None:
+        """A chain headed by a plain call must not loop forever.
+
+        `helper().clear()` walks down to a Name that is not an assertion.
+        The walk once had no way out of that case and hung the whole run,
+        so this test is here to keep the exit.
+        """
+        code = """
+def test_cents_are_counted(self):
+    _loaded_tools().clear()
+    assert money.cents() == 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1

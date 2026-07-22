@@ -5,7 +5,8 @@ from collections.abc import Iterator
 from types import NoneType
 from typing import final
 
-from .base import EO005, REPORT, Instance, Principle, Source, Violations
+from .base import NOTHING as ABSENT
+from .base import EO005, REPORT, Instance, Parents, Principle, Source, Violations
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ARG = Instance(ast.arg)
@@ -34,7 +35,7 @@ class NoNull(Principle):
             return self._check_implicit_returns(node)
         if CONSTANT.covers(node) and NOTHING.covers(node.value):
             # Skip None in type annotations
-            if self._is_in_type_annotation(node, source.tree):
+            if self._annotated(node, source.parents):
                 return []
             return REPORT.of(node, EO005)
         return []
@@ -64,30 +65,23 @@ class NoNull(Principle):
                 if RETURN.covers(inner):
                     yield inner
 
-    def _is_in_type_annotation(
-        self, target_node: ast.AST, tree: ast.AST | None
-    ) -> bool:
-        """Check if the target node is within a type annotation context."""
-        if not tree:
-            return False
+    def _annotated(self, node: ast.AST, parents: Parents) -> bool:
+        """Whether this None sits inside a type annotation.
 
-        # Find all annotation contexts in the tree
-        for node in ast.walk(tree):
-            # Function return annotations
-            if FUNCTION.covers(node) and node.returns:
-                if self._node_in_subtree(target_node, node.returns):
-                    return True
-            # Parameter annotations
-            elif ARG.covers(node) and node.annotation:
-                if self._node_in_subtree(target_node, node.annotation):
-                    return True
-            # Variable annotations
-            elif ANN_ASSIGN.covers(node) and node.annotation:
-                if self._node_in_subtree(target_node, node.annotation):
-                    return True
-
+        The question used to be asked downwards: walk the whole tree,
+        collect every annotation, look for the node inside it. That is the
+        tree once per None, and a file with hundreds of them pays for the
+        tree hundreds of times. Asked upwards, the answer costs the depth
+        of the nesting and nothing more.
+        """
+        held = node
+        above = parents.above(held)
+        while above is not ABSENT:
+            if FUNCTION.covers(above) and above.returns is held:
+                return True
+            if ARG.covers(above) and above.annotation is held:
+                return True
+            if ANN_ASSIGN.covers(above) and above.annotation is held:
+                return True
+            held, above = above, parents.above(above)
         return False
-
-    def _node_in_subtree(self, target: ast.AST, tree: ast.AST) -> bool:
-        """Check if target node is within the tree."""
-        return any(child is target for child in ast.walk(tree))
