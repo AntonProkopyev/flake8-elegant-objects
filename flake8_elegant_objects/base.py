@@ -4,6 +4,8 @@ import ast
 from dataclasses import dataclass, field
 from typing import Generic, Protocol, TypeGuard, TypeVar, final
 
+from .links import LINKS
+
 Kind = TypeVar("Kind")
 
 
@@ -140,7 +142,7 @@ class Report:
     def of(self, node: ast.AST, message: str) -> Violations:  # noqa: EO011
         """Report a violation, unless the node carries no position."""
         if hasattr(node, "lineno") and hasattr(node, "col_offset"):  # noqa: EO010
-            return [Violation(node.lineno, node.col_offset, message)]
+            return [Violation(node.lineno, node.col_offset, LINKS.behind(message))]
         return []
 
 
