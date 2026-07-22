@@ -1,6 +1,7 @@
 """Base classes and protocols for Elegant Objects checkers."""
 
 import ast
+from types import UnionType
 from typing import Protocol, final
 
 
@@ -55,6 +56,24 @@ class ErrorCodes:
     EO029 = (
         "EO029 Too many attributes: {name}, more than four attributes is not one object"
     )
+
+
+@final
+class Instance:
+    """A type, asked whether something is one of it.
+
+    Type discrimination cannot leave a linter that reads syntax trees: the
+    nodes of ast carry no polymorphic answer to "are you a name or a call".
+    What it can do is live in one place. This is that place, and the single
+    suppression below is the whole of it.
+    """
+
+    def __init__(self, kind: type | tuple[type, ...] | UnionType) -> None:
+        self._kind = kind
+
+    def covers(self, node: object) -> bool:
+        """Answer whether the given object is of this type."""
+        return isinstance(node, self._kind)  # noqa: EO010
 
 
 @final

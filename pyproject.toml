@@ -125,6 +125,8 @@ line-length = 88
 preview = true
 
 [tool.ruff.lint]
+# EO codes belong to this plugin, so ruff must not strip their noqa directives
+external = ["EO"]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings  

@@ -5,6 +5,7 @@ import ast
 import sys
 
 from .base import ElegantObjectsCore
+from .noqa import Noqa
 
 
 def main() -> None:
@@ -35,7 +36,12 @@ def main() -> None:
             core = ElegantObjectsCore(tree)
 
             file_errors = 0
-            violations = core.check_violations()
+            noqa = Noqa(source)
+            violations = [
+                found
+                for found in core.check_violations()
+                if noqa.allows(found.line, found.message.split(" ")[0])
+            ]
 
             for violation in violations:
                 print(
