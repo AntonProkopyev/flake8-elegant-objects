@@ -1,35 +1,38 @@
 """Deep mutability checker for complex mutation patterns."""
 
 import ast
+from typing import final
 
 from ..base import ErrorCodes, Violations, violation
-from .base import MutableStateTracker
+from .base import MutableState
 
 
-class DeepMutabilityChecker:
+@final
+class DeepMutability:
     """Enhanced checker for deep mutability patterns."""
 
     def __init__(self) -> None:
-        self.state_tracker = MutableStateTracker()
+        self.state_tracker = MutableState()
 
     def check_deep_mutations(self, tree: ast.AST) -> Violations:
         """Check for deep mutation patterns across the entire tree."""
         violations = []
 
-        class_visitor = ClassInfoCollector(self.state_tracker)
-        class_visitor.visit(tree)
+        classes = ClassInfo(self.state_tracker)
+        classes.visit(tree)
 
-        mutation_visitor = MutationDetector(self.state_tracker)
-        mutation_visitor.visit(tree)
-        violations.extend(mutation_visitor.violations)
+        mutations = Mutation(self.state_tracker)
+        mutations.visit(tree)
+        violations.extend(mutations.violations)
 
         return violations
 
 
-class ClassInfoCollector(ast.NodeVisitor):
+@final
+class ClassInfo(ast.NodeVisitor):
     """Collects information about class attributes and their mutability."""
 
-    def __init__(self, state_tracker: MutableStateTracker):
+    def __init__(self, state_tracker: MutableState):
         self.state_tracker = state_tracker
         self.current_class: str | None = None
 
@@ -82,10 +85,11 @@ class ClassInfoCollector(ast.NodeVisitor):
         return False
 
 
-class MutationDetector(ast.NodeVisitor):
+@final
+class Mutation(ast.NodeVisitor):
     """Detects various mutation patterns."""
 
-    def __init__(self, state_tracker: MutableStateTracker):
+    def __init__(self, state_tracker: MutableState):
         self.state_tracker = state_tracker
         self.current_class: str | None = None
         self.current_function: str | None = None

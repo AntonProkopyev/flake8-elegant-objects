@@ -1,9 +1,10 @@
 """Base classes and protocols for Elegant Objects checkers."""
 
 import ast
-from typing import Protocol
+from typing import Protocol, final
 
 
+@final
 class ErrorCodes:
     """Centralized error message definitions."""
 
@@ -56,6 +57,7 @@ class ErrorCodes:
     )
 
 
+@final
 class Violation:
     """Represents a detected violation."""
 
@@ -80,6 +82,7 @@ class Violation:
 Violations = list[Violation]
 
 
+@final
 class Source:
     """Aggregation of AST node and current class context."""
 
@@ -133,7 +136,7 @@ def get_all_principles() -> list[Principle]:
     # Import here to avoid circular imports
     from .no_constructor_code import NoConstructorCode
     from .no_er_name import NoErName
-    from .no_getters_setters import NoGettersSetters
+    from .no_getters_setters import NoAccessMethods
     from .no_implementation_inheritance import NoImplementationInheritance
     from .no_impure_tests import NoImpureTests
     from .no_mutable_objects import NoMutableObjects
@@ -148,7 +151,7 @@ def get_all_principles() -> list[Principle]:
         NoErName(),
         NoNull(),
         NoConstructorCode(),
-        NoGettersSetters(),
+        NoAccessMethods(),
         NoMutableObjects(),
         NoStatic(),
         NoTypeDiscrimination(),
@@ -160,6 +163,7 @@ def get_all_principles() -> list[Principle]:
     ]
 
 
+@final
 class ElegantObjectsCore:
     """Core analyzer for Elegant Objects violations."""
 

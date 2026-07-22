@@ -1,10 +1,12 @@
 """No ORM principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoOrm:
     """Checks for ORM/ActiveRecord pattern violations (EO013)."""
 

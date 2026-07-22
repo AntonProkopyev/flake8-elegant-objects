@@ -1,11 +1,12 @@
 """No type discrimination principle checker for Elegant Objects violations."""
 
 import ast
-from typing import ClassVar
+from typing import ClassVar, final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoTypeDiscrimination:
     """Checks for type discrimination violations (EO010)."""
 

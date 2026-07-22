@@ -1,12 +1,13 @@
 """Base classes and utilities for mutable object checkers."""
 
 import ast
-from typing import Any
+from typing import Any, final
 
 from ..base import Violations
 
 
-class MutabilityVisitor(ast.NodeVisitor):
+@final
+class MutabilityWalk(ast.NodeVisitor):
     """Helper visitor to track parent nodes for better mutation detection."""
 
     def __init__(self, checker: Any, current_class: ast.ClassDef | None) -> None:
@@ -21,7 +22,8 @@ class MutabilityVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-class MutableStateTracker:
+@final
+class MutableState:
     """Tracks mutable state across class definitions."""
 
     def __init__(self) -> None:

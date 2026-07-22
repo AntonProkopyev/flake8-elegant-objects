@@ -1,11 +1,13 @@
 """Shared mutable state checker for detecting dangerous sharing patterns."""
 
 import ast
+from typing import final
 
 from ..base import ErrorCodes, Violations, violation
 
 
-class SharedMutableStateChecker:
+@final
+class SharedMutableState:
     """Detects shared mutable state violations."""
 
     def check_shared_state(self, node: ast.ClassDef) -> Violations:

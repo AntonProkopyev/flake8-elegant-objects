@@ -1,22 +1,24 @@
 """Core NoMutableObjects checker that orchestrates all sub-checkers."""
 
 import ast
+from typing import final
 
 from ..base import ErrorCodes, Source, Violations, violation
 from .base import is_mutable_type
-from .copy_on_write_checker import CopyOnWriteChecker
-from .deep_checker import DeepMutabilityChecker
-from .pattern_detectors import MutablePatternDetectors
-from .shared_state_checker import SharedMutableStateChecker
+from .copy_on_write_checker import CopyOnWrite
+from .deep_checker import DeepMutability
+from .pattern_detectors import MutablePatterns
+from .shared_state_checker import SharedMutableState
 
 
+@final
 class NoMutableObjects:
     """Checks for mutable object violations (EO008) with enhanced detection."""
 
     def __init__(self) -> None:
-        self.deep_checker = DeepMutabilityChecker()
-        self.shared_state_checker = SharedMutableStateChecker()
-        self.copy_on_write_checker = CopyOnWriteChecker()
+        self.deep_checker = DeepMutability()
+        self.shared_state_checker = SharedMutableState()
+        self.copy_on_write_checker = CopyOnWrite()
 
     def check(self, source: Source) -> Violations:
         """Check source for mutable object violations with enhanced detection."""
@@ -30,10 +32,8 @@ class NoMutableObjects:
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
             )
-            violations.extend(MutablePatternDetectors.detect_aliasing_violations(node))
-            violations.extend(
-                MutablePatternDetectors.detect_defensive_copy_missing(node)
-            )
+            violations.extend(MutablePatterns.detect_aliasing_violations(node))
+            violations.extend(MutablePatterns.detect_defensive_copy_missing(node))
             if source.current_class:
                 violations.extend(
                     self.copy_on_write_checker.check_copy_on_write(

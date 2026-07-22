@@ -6,13 +6,14 @@ stopped being one object.
 """
 
 import ast
-from typing import ClassVar
+from typing import ClassVar, final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 MAX_ATTRIBUTES = 4
 
 
+@final
 class NoOpenClasses:
     """Checks for non-final classes (EO028) and overweight classes (EO029)."""
 

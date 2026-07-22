@@ -1,9 +1,9 @@
-"""Unit tests for NoGettersSetters principle."""
+"""Unit tests for NoAccessMethods principle."""
 
 import ast
 
 from flake8_elegant_objects.base import Source
-from flake8_elegant_objects.no_getters_setters import NoGettersSetters
+from flake8_elegant_objects.no_getters_setters import NoAccessMethods
 
 
 class TestNoGettersSettersPrinciple:
@@ -12,7 +12,7 @@ class TestNoGettersSettersPrinciple:
     def _check_code(self, code: str) -> list[str]:
         """Helper to check code and return violation messages."""
         tree = ast.parse(code)
-        checker = NoGettersSetters()
+        checker = NoAccessMethods()
         violations = []
 
         def visit(node: ast.AST, current_class: ast.ClassDef | None = None) -> None:

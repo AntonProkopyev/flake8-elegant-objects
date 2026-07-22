@@ -1,11 +1,13 @@
 """No getters/setters principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, is_method, violation
 
 
-class NoGettersSetters:
+@final
+class NoAccessMethods:
     """Checks for getter/setter methods (EO007)."""
 
     def check(self, source: Source) -> Violations:

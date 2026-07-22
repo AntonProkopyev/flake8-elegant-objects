@@ -40,7 +40,7 @@ class DataManager:  # EO001 - -er class name
         assert "EO001" in error_codes  # Naming
         assert "EO005" in error_codes  # NoNull
         assert "EO006" in error_codes  # NoConstructorCode
-        assert "EO007" in error_codes  # NoGettersSetters
+        assert "EO007" in error_codes  # NoAccessMethods
         assert "EO015" in error_codes  # NoMutableObjects - class attribute
         assert "EO009" in error_codes  # Advanced - static method
         assert "EO010" in error_codes  # Advanced - isinstance

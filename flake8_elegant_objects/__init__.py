@@ -8,11 +8,12 @@ Based on Yegor Bugayenko's principles from elegantobjects.org
 
 import ast
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, final
 
 from .base import ElegantObjectsCore
 
 
+@final
 class ElegantObjectsPlugin:
     """Flake8 plugin to check for Elegant Objects violations."""
 

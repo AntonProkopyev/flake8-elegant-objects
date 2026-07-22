@@ -1,10 +1,12 @@
 """No impure tests principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoImpureTests:
     """Checks for impure test methods violations (EO012)."""
 

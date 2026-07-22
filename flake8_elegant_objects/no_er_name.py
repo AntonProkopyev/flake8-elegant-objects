@@ -2,11 +2,12 @@
 
 import ast
 import re
-from typing import ClassVar
+from typing import ClassVar, final
 
 from .base import ErrorCodes, Source, Violations, is_method, violation
 
 
+@final
 class NoErName:
     """Checks for naming violations in classes, methods, variables, and functions."""
 
@@ -100,7 +101,11 @@ class NoErName:
 
     def _is_allowed(self, name: str) -> bool:
         """Check if a name ends in an ordinary noun rather than an actor."""
-        return self._last_word(name) in self.ALLOWED_EXCEPTIONS
+        word = self._last_word(name)
+        if word in self.ALLOWED_EXCEPTIONS:
+            return True
+        # The plural of an ordinary noun is an ordinary noun
+        return word.endswith("s") and word[:-1] in self.ALLOWED_EXCEPTIONS
 
     def _last_word(self, name: str) -> str:
         """Split a snake_case or camelCase name and return its final word."""

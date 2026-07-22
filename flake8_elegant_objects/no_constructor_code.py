@@ -1,10 +1,12 @@
 """No constructor code principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, is_method, violation
 
 
+@final
 class NoConstructorCode:
     """Checks for code in constructors beyond parameter assignments (EO006)."""
 

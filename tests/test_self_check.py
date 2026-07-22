@@ -17,14 +17,10 @@ from flake8_elegant_objects.base import ElegantObjectsCore
 SOURCES = pathlib.Path(__file__).parent.parent / "flake8_elegant_objects"
 
 BASELINE = {
-    "EO001": 9,
-    "EO003": 6,
-    "EO005": 16,
+    "EO005": 15,
     "EO006": 14,
     "EO007": 6,
     "EO009": 14,
-    # Raised from 155 by _without_docstring in no_impure_tests.py, which needs
-    # three isinstance calls to tell a docstring from a statement.
     "EO010": 158,
     "EO011": 31,
     "EO013": 2,
@@ -33,7 +29,6 @@ BASELINE = {
     "EO019": 1,
     "EO020": 2,
     "EO025": 6,
-    "EO028": 25,
     "EO029": 1,
 }
 

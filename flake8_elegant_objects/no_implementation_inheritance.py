@@ -1,10 +1,12 @@
 """No implementation inheritance principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoImplementationInheritance:
     """Checks for implementation inheritance violations (EO014)."""
 

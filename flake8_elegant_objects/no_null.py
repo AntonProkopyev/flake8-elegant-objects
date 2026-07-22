@@ -2,10 +2,12 @@
 
 import ast
 from collections.abc import Iterator
+from typing import final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoNull:
     """Checks for None usage violations (EO005)."""
 

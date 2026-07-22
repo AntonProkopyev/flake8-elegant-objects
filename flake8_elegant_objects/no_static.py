@@ -1,11 +1,12 @@
 """No static methods principle checker for Elegant Objects violations."""
 
 import ast
-from typing import ClassVar
+from typing import ClassVar, final
 
 from .base import ErrorCodes, Source, Violations, violation
 
 
+@final
 class NoStatic:
     """Checks for static method violations (EO009)."""
 

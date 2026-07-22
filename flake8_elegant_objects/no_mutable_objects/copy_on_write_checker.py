@@ -1,11 +1,13 @@
 """Copy-on-write checker for proper immutability patterns."""
 
 import ast
+from typing import final
 
 from ..base import ErrorCodes, Violations, violation
 
 
-class CopyOnWriteChecker:
+@final
+class CopyOnWrite:
     """Checks for proper copy-on-write patterns for immutability."""
 
     def check_copy_on_write(
@@ -44,9 +46,7 @@ class CopyOnWriteChecker:
         """Check if function returns a new instance."""
         for node in ast.walk(func):
             if isinstance(node, ast.Return) and node.value:
-                if CopyOnWriteChecker._is_class_constructor_call(
-                    node.value, class_name
-                ):
+                if CopyOnWrite._is_class_constructor_call(node.value, class_name):
                     return True
         return False
 

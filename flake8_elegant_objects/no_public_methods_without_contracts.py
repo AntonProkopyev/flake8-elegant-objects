@@ -1,10 +1,12 @@
 """No public methods without contracts principle checker for Python."""
 
 import ast
+from typing import final
 
 from .base import ErrorCodes, Principle, Source, Violations, is_method, violation
 
 
+@final
 class NoPublicMethodsWithoutContracts(Principle):
     """Check that public methods are defined by contracts (Protocol/ABC)."""
 

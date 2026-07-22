@@ -1,11 +1,13 @@
 """Additional specific violation pattern detectors."""
 
 import ast
+from typing import final
 
 from ..base import ErrorCodes, Violations, violation
 
 
-class MutablePatternDetectors:
+@final
+class MutablePatterns:
     """Collection of specific mutable pattern detectors."""
 
     @staticmethod
@@ -26,7 +28,7 @@ class MutablePatternDetectors:
                     # Skip private attributes (starting with _) as they're often used for immutable storage
                     attr_name = stmt.value.attr
                     if not attr_name.startswith("_"):
-                        attr_lower = attr_name.lower()
+                        lowered = attr_name.lower()
                         mutable_attr_patterns = {
                             "data",
                             "items",
@@ -37,9 +39,7 @@ class MutablePatternDetectors:
                             "values",
                             "cache",
                         }
-                        if any(
-                            pattern in attr_lower for pattern in mutable_attr_patterns
-                        ):
+                        if any(pattern in lowered for pattern in mutable_attr_patterns):
                             violations.extend(
                                 violation(
                                     stmt,
@@ -59,7 +59,7 @@ class MutablePatternDetectors:
         if node.name != "__init__":
             return []
 
-        return MutablePatternDetectors._check_init_defensive_copies(node)
+        return MutablePatterns._check_init_defensive_copies(node)
 
     @staticmethod
     def _check_init_defensive_copies(
@@ -72,9 +72,7 @@ class MutablePatternDetectors:
         for stmt in ast.walk(init_node):
             if isinstance(stmt, ast.Assign):
                 violations.extend(
-                    MutablePatternDetectors._check_assignment_defensive_copy(
-                        stmt, param_names
-                    )
+                    MutablePatterns._check_assignment_defensive_copy(stmt, param_names)
                 )
 
         return violations
@@ -87,10 +85,8 @@ class MutablePatternDetectors:
         violations = []
 
         for target in stmt.targets:
-            if MutablePatternDetectors._is_self_attribute(target):
-                if MutablePatternDetectors._is_param_assignment(
-                    stmt.value, param_names
-                ):
+            if MutablePatterns._is_self_attribute(target):
+                if MutablePatterns._is_param_assignment(stmt.value, param_names):
                     assert isinstance(stmt.value, ast.Name)  # Type narrowing for mypy
                     violations.extend(
                         violation(

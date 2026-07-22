@@ -9,17 +9,17 @@ from .base import ElegantObjectsCore
 
 def main() -> None:
     """Standalone command-line interface."""
-    parser = argparse.ArgumentParser(
+    arguments = argparse.ArgumentParser(
         description="Check Python files for Elegant Objects violations"
     )
-    parser.add_argument("files", nargs="+", help="Python files to check")
-    parser.add_argument(
+    arguments.add_argument("files", nargs="+", help="Python files to check")
+    arguments.add_argument(
         "--show-source",
         action="store_true",
         help="Show source code context for violations",
     )
 
-    args = parser.parse_args()
+    args = arguments.parse_args()
 
     total_errors = 0
 
