@@ -27,11 +27,29 @@ class NoGettersSetters:
             if isinstance(decorator, ast.Attribute) and decorator.attr == "setter":
                 return violation(node, ErrorCodes.EO007.format(name=node.name))
 
-        # Skip methods with @property decorator
+        # Properties that only hand back an attribute are getters
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Name) and decorator.id == "property":
+                if self._returns_attribute(node):
+                    return violation(node, ErrorCodes.EO007.format(name=node.name))
                 return []
 
+        return self._check_names(node)
+
+    def _returns_attribute(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        """Check if a method body is a single return of one's own attribute."""
+        if len(node.body) != 1:
+            return False
+        statement = node.body[0]
+        return (
+            isinstance(statement, ast.Return)
+            and isinstance(statement.value, ast.Attribute)
+            and isinstance(statement.value.value, ast.Name)
+            and statement.value.value.id == "self"
+        )
+
+    def _check_names(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> Violations:
+        """Check for Java-style getter and setter names."""
         name = node.name.lower()
         original_name = node.name
 

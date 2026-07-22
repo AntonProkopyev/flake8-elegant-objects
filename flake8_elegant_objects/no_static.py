@@ -23,7 +23,22 @@ class NoStatic:
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             return self._check_static_methods(node)
 
+        if isinstance(node, ast.Module):
+            return self._check_utility_functions(node)
+
         return []
+
+    def _check_utility_functions(self, node: ast.Module) -> Violations:
+        """Check for module level functions, the Python static method."""
+        violations: Violations = []
+        for statement in node.body:
+            if isinstance(statement, ast.FunctionDef | ast.AsyncFunctionDef):
+                if statement.name.startswith("_"):
+                    continue
+                violations.extend(
+                    violation(statement, ErrorCodes.EO009.format(name=statement.name))
+                )
+        return violations
 
     def _check_static_methods(
         self, node: ast.FunctionDef | ast.AsyncFunctionDef

@@ -23,7 +23,7 @@ Verb names are not violations: a method is either a noun (builder) or a verb (ma
 ### Object Behavior (EO005-EO007)
 - `EO005`: Null (None) usage violates EO principle
 - `EO006`: Code in constructor violates EO principle
-- `EO007`: Getter/setter method violates EO principle
+- `EO007`: Getter/setter method, including `@property` accessors, violates EO principle
 
 ### Mutable Object Violations (EO008, EO015-EO021, EO023, EO025-EO027)
 - `EO008`: Mutable dataclass violation
@@ -39,13 +39,15 @@ Verb names are not violations: a method is either a noun (builder) or a verb (ma
 - `EO026`: Aliasing violation (exposing mutable state)
 - `EO027`: Defensive copy violation
 
-### Design and Architecture (EO009-EO014)
-- `EO009`: Static or class method violates EO principle
+### Design and Architecture (EO009-EO014, EO028-EO029)
+- `EO009`: Static or class method, or a module level function, violates EO principle
 - `EO010`: isinstance/type casting violates EO principle (avoid type discrimination)
-- `EO011`: Public method without contract (Protocol/ABC) violates EO principle
+- `EO011`: Public method without contract (Protocol/ABC) violates EO principle (test methods exempt)
 - `EO012`: Test method contains non-assertThat statements (only assertThat allowed)
 - `EO013`: ORM/ActiveRecord pattern violates EO principle
 - `EO014`: Implementation inheritance violates EO principle
+- `EO028`: Class is not final
+- `EO029`: Class holds more than four attributes
 
 ## Installation
 

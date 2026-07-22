@@ -56,6 +56,28 @@ class Example:
         assert len(violations) == 1
         assert "EO009" in violations[0]
 
+    def test_module_level_function_violation(self) -> None:
+        """Test detection of utility functions, the Python static method."""
+        code = """
+def normalize(text):
+    return text.strip()
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO009" in violations[0]
+
+    def test_nested_function_is_not_a_utility(self) -> None:
+        """Test that a closure inside a method is not a utility function."""
+        code = """
+class Text:
+    def normalized(self):
+        def strip(value):
+            return value.strip()
+        return strip(self._value)
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
     def test_regular_methods_valid(self) -> None:
         """Test that regular methods are valid."""
         code = """

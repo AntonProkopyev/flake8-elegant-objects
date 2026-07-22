@@ -8,7 +8,11 @@ import pytest
 
 from flake8_elegant_objects.__main__ import main
 
-CLEAN = "class Money:\n    def __init__(self, cents):\n        self.cents = cents\n"
+CLEAN = (
+    "from typing import final\n\n"
+    "@final\nclass Money:\n"
+    "    def __init__(self, cents):\n        self.cents = cents\n"
+)
 DIRTY = "class Parser:\n    def parse(self, text):\n        return None\n"
 
 

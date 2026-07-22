@@ -127,21 +127,21 @@ class User:
         getter_setter_violations = [v for v in violations if "EO007" in v]
         assert len(getter_setter_violations) == 0
 
-    def test_property_decorators_ignored(self) -> None:
-        """Test that @property decorated methods are ignored."""
+    def test_property_decorators_do_not_excuse_getters(self) -> None:
+        """Test that @property does not turn a getter into something else."""
         code = """
 class User:
     @property
-    def get_name(self):  # Would normally be a violation but @property makes it ok
+    def get_name(self):
         return self._name
 
     @property
-    def getName(self):  # Would normally be a violation but @property makes it ok
+    def getName(self):
         return self._name
 """
         violations = self._check_code(code)
         getter_setter_violations = [v for v in violations if "EO007" in v]
-        assert len(getter_setter_violations) == 0
+        assert len(getter_setter_violations) == 2
 
     def test_functions_not_methods_ignored(self) -> None:
         """Test that standalone functions are ignored by this principle."""
@@ -185,6 +185,29 @@ class DataProcessor:
         assert any("get_data" in v for v in getter_setter_violations)
         assert any("set_config" in v for v in getter_setter_violations)
 
+    def test_property_getter_violation(self) -> None:
+        """Test detection of getters written as properties."""
+        code = """
+class User:
+    @property
+    def name(self):
+        return self._name
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO007" in violations[0]
+
+    def test_property_with_behaviour_is_valid(self) -> None:
+        """Test that a property doing real work is not a getter."""
+        code = """
+class User:
+    @property
+    def greeting(self):
+        return "hello, " + self._name.upper()
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
     def test_property_setter_violation(self) -> None:
         """Test detection of setters written as property setters."""
         code = """
@@ -198,5 +221,6 @@ class User:
         self._name = value
 """
         violations = self._check_code(code)
-        assert len(violations) == 1
-        assert "EO007" in violations[0]
+        # The property getter and its setter are both violations
+        assert len(violations) == 2
+        assert all("EO007" in v for v in violations)

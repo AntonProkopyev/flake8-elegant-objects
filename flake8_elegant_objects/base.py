@@ -41,6 +41,12 @@ class ErrorCodes:
     EO025 = "EO025 Copy-on-write violation: {name}"
     EO026 = "EO026 Aliasing violation (exposing mutable state): {name}"
     EO027 = "EO027 Defensive copy violation: {name}"
+    EO028 = (
+        "EO028 Class '{name}' is not final, which invites implementation inheritance"
+    )
+    EO029 = (
+        "EO029 Too many attributes: {name}, more than four attributes is not one object"
+    )
 
 
 class Violation:
@@ -125,6 +131,7 @@ def get_all_principles() -> list[Principle]:
     from .no_impure_tests import NoImpureTests
     from .no_mutable_objects import NoMutableObjects
     from .no_null import NoNull
+    from .no_open_classes import NoOpenClasses
     from .no_orm import NoOrm
     from .no_public_methods_without_contracts import NoPublicMethodsWithoutContracts
     from .no_static import NoStatic
@@ -142,6 +149,7 @@ def get_all_principles() -> list[Principle]:
         NoImpureTests(),
         NoOrm(),
         NoImplementationInheritance(),
+        NoOpenClasses(),
     ]
 
 

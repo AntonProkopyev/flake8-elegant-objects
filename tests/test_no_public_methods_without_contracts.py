@@ -275,3 +275,24 @@ class EmptyClass:
 """
         violations = self._check_code(code)
         assert len(violations) == 0
+
+    def test_test_methods_are_exempt(self) -> None:
+        """Test that test methods are not contract implementations."""
+        code = """
+class TestMoney:
+    def test_cents_are_counted(self):
+        assert Money(100).cents() == 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_async_methods_are_checked(self) -> None:
+        """Test that async public methods are checked like the rest."""
+        code = """
+class Money:
+    async def cents(self):
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO011" in violations[0]

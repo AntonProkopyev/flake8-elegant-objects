@@ -12,7 +12,7 @@ class NoPublicMethodsWithoutContracts(Principle):
         """Check for public methods without contracts."""
         violations: Violations = []
 
-        if not isinstance(source.node, ast.FunctionDef):
+        if not isinstance(source.node, ast.FunctionDef | ast.AsyncFunctionDef):
             return violations
 
         if not source.current_class or not is_method(source.node):
@@ -21,7 +21,7 @@ class NoPublicMethodsWithoutContracts(Principle):
         if source.node.name.startswith("_"):
             return violations
 
-        if source.node.name.startswith("__") and source.node.name.endswith("__"):
+        if self._is_test(source.node, source.current_class):
             return violations
         if self._class_has_contract(source.current_class, source.tree):
             if not self._method_from_contract(
@@ -38,6 +38,14 @@ class NoPublicMethodsWithoutContracts(Principle):
             )
 
         return violations
+
+    def _is_test(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        class_node: ast.ClassDef,
+    ) -> bool:
+        """Check if a method belongs to a test suite rather than a contract."""
+        return node.name.startswith("test") or class_node.name.startswith("Test")
 
     def _class_has_contract(
         self, class_node: ast.ClassDef, tree: ast.AST | None

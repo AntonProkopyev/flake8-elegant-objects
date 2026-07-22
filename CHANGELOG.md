@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `EO028`: a class that is not final invites implementation inheritance. Protocols,
+  abstract base classes and test suites are exempt, since they exist to be extended.
+- `EO029`: a class holding more than four attributes has stopped being one object.
+- `EO009` now covers module level functions, which are the Python static method.
+- `EO007` now covers `@property` accessors whose body is a single `return self._x`.
+- `EO011` now covers `async` methods, and exempts test methods, which implement
+  no contract.
 - Tests for the standalone CLI and for plugin registration through flake8 itself,
   neither of which was covered before.
 - `flake8` as a development dependency.

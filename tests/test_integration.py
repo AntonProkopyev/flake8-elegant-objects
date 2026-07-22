@@ -96,16 +96,19 @@ class UserManager:  # EO001 - -er class name
         code = """
 from abc import ABC
 from dataclasses import dataclass
+from typing import final
 
 class User(ABC):
     def name(self) -> str:
         pass
 
+@final
 @dataclass(frozen=True)
 class ImmutableUser:
     name: str
     email: str
 
+@final
 class UserRepository:
     def __init__(self, storage):
         self.storage = storage
