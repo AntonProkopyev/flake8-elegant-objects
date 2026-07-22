@@ -5,6 +5,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-22
+
+Rules changed shape in ways that will report differently on code that passed
+1.1.1. Two codes are gone, one stopped enforcing something the principles do
+not ask for, and three started catching what they had been missing. Expect new
+findings on an unchanged codebase.
+
+### Removed
+
+- `EO022` (missing factory methods) and `EO024` (missing immutability enforcement).
+  Both prescribed a technique rather than forbidding one, neither appears in the
+  Elegant Objects principles, and both duplicated `EO016` on the same line.
+- Procedural verb detection in `EO002`/`EO003`/`EO004`. Methods are nouns or verbs
+  separated into queries and commands, so verb names are not violations. These codes
+  now report -er names only, as `EO001` always did.
+
+### Fixed
+
+- The `flake8-elegant-objects` console script raised `ImportError`: it pointed at
+  `flake8_elegant_objects:main`, while `main` lives in `__main__.py`.
+- `EO006` no longer reports a constructor docstring as code.
+- `EO005` now reports a bare `return` in a function that returns values elsewhere.
+- `EO009` now detects decorators reached through a module, such as
+  `@abc.abstractstaticmethod`.
+- `EO010` now detects `typing.cast`, `builtins.isinstance`, `issubclass`,
+  `match`/`case` class patterns, and reflection through `__class__`, `__bases__`,
+  `__mro__` and `__subclasses__`.
+- `EO007` now detects `@x.setter` methods, which are setters regardless of name.
+- `EO012` no longer reports a test docstring as a statement, and now requires the
+  single assertion to be the last statement of the method. The count was already
+  enforced; the position was not, so an assertion followed by anything permitted
+  passed. Its three faults now carry three distinct messages under the one code.
+- `EO001`-`EO004` now match the -er and -or suffixes themselves, including plurals,
+  instead of a closed list of about seventy words. The principle says "readers,
+  parsers, controllers, sorters, and so on", and the old list missed Iterator,
+  Visitor, Simulator, Handlers and everything else outside it. Ordinary nouns are
+  allowed by their final word, so ImmutableUser and TaskCounter still pass.
+
+### Added
+
+- `EO028`: a class that is not final invites implementation inheritance. Protocols,
+  abstract base classes and test suites are exempt, since they exist to be extended.
+- `EO029`: a class holding more than four attributes has stopped being one object.
+- `EO009` now covers module level functions, which are the Python static method.
+- `EO007` now covers `@property` accessors whose body is a single `return self._x`.
+- `EO011` now covers `async` methods, and exempts test methods, which implement
+  no contract.
+- Tests for the standalone CLI and for plugin registration through flake8 itself,
+  neither of which was covered before.
+- `flake8` as a development dependency.
+- A self check: the plugin runs over its own source and fails when any violation
+  count grows or a new code starts firing. The counts are debt, not a target.
+- A check that the version flake8 reports matches the one the distribution
+  declares. The two were written out independently in `pyproject.toml` and
+  `__init__.py`.
+- A coverage floor of 90 percent, which the README badge had been claiming
+  without anything enforcing it.
+
+### Changed
+
+- The plugin obeys every rule it enforces. What began as 300 violations against
+  its own source is 0, with 23 suppressions that each name a reason: entry point
+  signatures flake8 and pyproject dictate, one isinstance inside `Instance`, one
+  `None` for the absence of an enclosing class, `Generic` for TypeGuard narrowing,
+  and helper methods whose contracts would mean a Protocol apiece. A test fixes
+  that count, so a new suppression has to be taken deliberately.
+- Type discrimination lives in one object. `Instance(kind).covers(node)` replaced
+  148 direct `isinstance` calls across nineteen files; its answer is a `TypeGuard`,
+  so callers keep the narrowing they had.
+- Error messages moved from the `ErrorCodes` class to module constants, and the
+  parent of a node is a real map rather than an attribute stitched onto borrowed
+  ast objects.
+
+- CI installs the built wheel into a clean environment and runs the console
+  script and `flake8 --select=EO` from it. Editable installs hide the fault
+  that shipped in 1.1.1.
+- CI checks the lockfile against `pyproject.toml`, tests Python 3.14, caches uv,
+  cancels superseded runs and restricts token permissions to reading contents.
+- Linting, formatting and type checking no longer run in both workflows. They
+  ran four times per push, once per Python version, and now run once.
+
 ## [1.1.1] - 2024-06-30
 
 ### Minor release

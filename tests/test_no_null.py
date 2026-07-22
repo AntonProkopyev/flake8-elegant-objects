@@ -91,6 +91,29 @@ filtered = [x for x in data if x is not None]
         assert len(violations) == 2
         assert all("EO005" in v for v in violations)
 
+    def test_bare_return_violation(self) -> None:
+        """Test detection of a bare return, which yields None implicitly."""
+        code = """
+def value(flag):
+    if flag:
+        return 1
+    return
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO005" in violations[0]
+
+    def test_bare_return_in_command_is_valid(self) -> None:
+        """Test that a command returning nothing everywhere is not a null return."""
+        code = """
+def send(flag):
+    if flag:
+        return
+    print("sent")
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
     def test_valid_code_without_none(self) -> None:
         """Test that code without None doesn't trigger violations."""
         code = """

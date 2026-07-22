@@ -1,0 +1,87 @@
+name: Publish
+
+# Trusted publishing: PyPI verifies this workflow through OIDC and issues a
+# short-lived token, so no API token is stored anywhere. It requires a pending
+# publisher configured once at
+# https://pypi.org/manage/project/flake8-elegant-objects/settings/publishing/
+# naming this repository, this workflow file and the pypi environment.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.10
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run unit tests
+        run: uv run pytest tests/ -q
+
+      - name: Build package
+        run: uv build
+
+      - name: Check that the built version matches the tag
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          built=$(ls dist/*.whl | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+)-py3.*/\1/')
+          if [ "$tag" != "$built" ]; then
+            echo "tag $tag does not match built version $built"
+            exit 1
+          fi
+
+      # The 1.1.1 release shipped a console script that raised ImportError.
+      # An editable install hides that, so the wheel is installed on its own
+      # and actually run before anything reaches PyPI.
+      - name: Run the wheel in a clean environment
+        run: |
+          uv venv /tmp/clean
+          uv pip install --python /tmp/clean/bin/python dist/*.whl flake8
+          printf 'from typing import final\n\n@final\nclass Money:\n    def __init__(self, cents):\n        self.cents = cents\n' > /tmp/clean_sample.py
+          /tmp/clean/bin/flake8-elegant-objects /tmp/clean_sample.py
+          /tmp/clean/bin/python -m flake8 --version | grep flake8-elegant-objects
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: pypi
+      url: https://pypi.org/p/flake8-elegant-objects
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,70 +1,89 @@
 """Core NoMutableObjects checker that orchestrates all sub-checkers."""
 
 import ast
+from typing import final
 
-from ..base import ErrorCodes, Source, Violations, violation
-from .base import is_mutable_type
-from .contract_checker import ImmutabilityContractChecker
-from .copy_on_write_checker import CopyOnWriteChecker
-from .deep_checker import DeepMutabilityChecker
-from .factory_checker import FactoryMethodChecker
-from .pattern_detectors import MutablePatternDetectors
-from .shared_state_checker import SharedMutableStateChecker
+from ..base import (
+    EO008,
+    EO015,
+    EO016,
+    EO017,
+    EO018,
+    EO019,
+    EO020,
+    REPORT,
+    Instance,
+    Parents,
+    Principle,
+    Source,
+    Violations,
+)
+from .base import MUTABLE_TYPE
+from .copy_on_write_checker import CopyOnWrite
+from .deep_checker import DeepMutability
+from .pattern_detectors import MutablePatterns
+from .shared_state_checker import SharedMutableState
+
+CLASS_DEF = Instance(ast.ClassDef)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+ASSIGN = Instance(ast.Assign)
+AUG_ASSIGN = Instance(ast.AugAssign)
+CALL = Instance(ast.Call)
+SUBSCRIPT = Instance(ast.Subscript)
+MODULE = Instance(ast.Module)
+NAME = Instance(ast.Name)
+ATTRIBUTE = Instance(ast.Attribute)
+CONSTANT = Instance(ast.Constant)
 
 
-class NoMutableObjects:
+@final
+class NoMutableObjects(Principle):
     """Checks for mutable object violations (EO008) with enhanced detection."""
-
-    def __init__(self) -> None:
-        self.deep_checker = DeepMutabilityChecker()
-        self.factory_checker = FactoryMethodChecker()
-        self.shared_state_checker = SharedMutableStateChecker()
-        self.contract_checker = ImmutabilityContractChecker()
-        self.copy_on_write_checker = CopyOnWriteChecker()
 
     def check(self, source: Source) -> Violations:
         """Check source for mutable object violations with enhanced detection."""
         node = source.node
         violations = []
 
-        if isinstance(node, ast.ClassDef):
+        if CLASS_DEF.covers(node):
             violations.extend(self._check_mutable_class(node))
-            violations.extend(self.factory_checker.check_factory_pattern(node))
-            violations.extend(self.shared_state_checker.check_shared_state(node))
-            violations.extend(self.contract_checker.check_immutability_contract(node))
-        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            violations.extend(SharedMutableState().check_shared_state(node))
+        elif FUNCTION.covers(node):
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
             )
-            violations.extend(MutablePatternDetectors.detect_aliasing_violations(node))
-            violations.extend(
-                MutablePatternDetectors.detect_defensive_copy_missing(node)
-            )
+            violations.extend(MutablePatterns().detect_aliasing_violations(node))
+            violations.extend(MutablePatterns().detect_defensive_copy_missing(node))
             if source.current_class:
                 violations.extend(
-                    self.copy_on_write_checker.check_copy_on_write(
-                        node, source.current_class.name
-                    )
+                    CopyOnWrite().check_copy_on_write(node, source.current_class.name)
                 )
-        elif isinstance(node, ast.Assign):
+        elif ASSIGN.covers(node):
             violations.extend(
-                self._check_assignment_mutation(node, source.current_class)
+                self._check_assignment_mutation(
+                    node, source.current_class, source.parents
+                )
             )
-        elif isinstance(node, ast.AugAssign):
+        elif AUG_ASSIGN.covers(node):
             violations.extend(
                 self._check_augmented_assignment(node, source.current_class)
             )
-        elif isinstance(node, ast.Call):
+        elif CALL.covers(node):
             violations.extend(
                 self._check_mutating_method_call(node, source.current_class)
             )
-        elif isinstance(node, ast.Subscript):
+        elif SUBSCRIPT.covers(node):
             violations.extend(
-                self._check_subscript_mutation(node, source.current_class)
+                self._check_subscript_mutation(
+                    node, source.current_class, source.parents
+                )
             )
 
-        if source.tree and isinstance(source.node, ast.Module):
-            violations.extend(self.deep_checker.check_deep_mutations(source.tree))
+        if source.tree and MODULE.covers(source.node):
+            violations.extend(DeepMutability().check_deep_mutations(source.tree))
 
         return violations
 
@@ -84,9 +103,7 @@ class NoMutableObjects:
         )
 
         if has_dataclass and not has_frozen:
-            return violation(
-                node, ErrorCodes.EO008.format(name=f"@dataclass class {node.name}")
-            )
+            return REPORT.of(node, EO008.format(name=f"@dataclass class {node.name}"))
         return []
 
     def _analyze_dataclass_decorators(
@@ -97,9 +114,9 @@ class NoMutableObjects:
         has_frozen = False
 
         for decorator in decorators:
-            if isinstance(decorator, ast.Name) and decorator.id == "dataclass":
+            if NAME.covers(decorator) and decorator.id == "dataclass":
                 has_dataclass = True
-            elif isinstance(decorator, ast.Call) and self._is_dataclass_call(decorator):
+            elif CALL.covers(decorator) and self._is_dataclass_call(decorator):
                 has_dataclass = True
                 has_frozen = self._check_frozen_keyword(decorator.keywords)
 
@@ -107,14 +124,14 @@ class NoMutableObjects:
 
     def _is_dataclass_call(self, decorator: ast.Call) -> bool:
         """Check if decorator call is a dataclass."""
-        return isinstance(decorator.func, ast.Name) and decorator.func.id == "dataclass"
+        return NAME.covers(decorator.func) and decorator.func.id == "dataclass"
 
     def _check_frozen_keyword(self, keywords: list[ast.keyword]) -> bool:
         """Check if frozen=True is set in dataclass keywords."""
         for keyword in keywords:
             if (
                 keyword.arg == "frozen"
-                and isinstance(keyword.value, ast.Constant)
+                and CONSTANT.covers(keyword.value)
                 and keyword.value.value is True
             ):
                 return True
@@ -125,7 +142,7 @@ class NoMutableObjects:
         violations: Violations = []
 
         for stmt in node.body:
-            if isinstance(stmt, ast.Assign):
+            if ASSIGN.covers(stmt):
                 violations.extend(self._check_assignment_targets(stmt))
 
         return violations
@@ -135,11 +152,11 @@ class NoMutableObjects:
         violations: Violations = []
 
         for target in stmt.targets:
-            if isinstance(target, ast.Name) and is_mutable_type(stmt.value):
+            if NAME.covers(target) and MUTABLE_TYPE.covers(stmt.value):
                 violations.extend(
-                    violation(
+                    REPORT.of(
                         stmt,
-                        ErrorCodes.EO015.format(name=f"class attribute '{target.id}'"),
+                        EO015.format(name=f"class attribute '{target.id}'"),
                     )
                 )
 
@@ -158,18 +175,18 @@ class NoMutableObjects:
 
         if node.name == "__init__":
             for stmt in ast.walk(node):
-                if isinstance(stmt, ast.Assign):
+                if ASSIGN.covers(stmt):
                     for target in stmt.targets:
                         if (
-                            isinstance(target, ast.Attribute)
-                            and isinstance(target.value, ast.Name)
+                            ATTRIBUTE.covers(target)
+                            and NAME.covers(target.value)
                             and target.value.id == "self"
-                            and is_mutable_type(stmt.value)
+                            and MUTABLE_TYPE.covers(stmt.value)
                         ):
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     stmt,
-                                    ErrorCodes.EO016.format(
+                                    EO016.format(
                                         name=f"instance attribute 'self.{target.attr}'"
                                     ),
                                 )
@@ -178,7 +195,10 @@ class NoMutableObjects:
         return violations
 
     def _check_assignment_mutation(
-        self, node: ast.Assign, current_class: ast.ClassDef | None
+        self,
+        node: ast.Assign,
+        current_class: ast.ClassDef | None,
+        parents: Parents,
     ) -> Violations:
         """Check for mutations of instance attributes."""
         violations: Violations = []
@@ -188,24 +208,24 @@ class NoMutableObjects:
 
         for target in node.targets:
             if (
-                isinstance(target, ast.Attribute)
-                and isinstance(target.value, ast.Name)
+                ATTRIBUTE.covers(target)
+                and NAME.covers(target.value)
                 and target.value.id == "self"
             ):
                 parent: ast.AST | None = node
                 while parent:
-                    if isinstance(parent, ast.FunctionDef | ast.AsyncFunctionDef):
+                    if FUNCTION.covers(parent):
                         if parent.name != "__init__":
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     node,
-                                    ErrorCodes.EO017.format(
+                                    EO017.format(
                                         name=f"mutation of 'self.{target.attr}'"
                                     ),
                                 )
                             )
                         break
-                    parent = getattr(parent, "_parent", None)
+                    parent = parents.above(parent)
 
         return violations
 
@@ -220,14 +240,14 @@ class NoMutableObjects:
 
         # Check for self.attr += value
         if (
-            isinstance(node.target, ast.Attribute)
-            and isinstance(node.target.value, ast.Name)
+            ATTRIBUTE.covers(node.target)
+            and NAME.covers(node.target.value)
             and node.target.value.id == "self"
         ):
             violations.extend(
-                violation(
+                REPORT.of(
                     node,
-                    ErrorCodes.EO018.format(
+                    EO018.format(
                         name=f"augmented assignment to 'self.{node.target.attr}'"
                     ),
                 )
@@ -261,16 +281,16 @@ class NoMutableObjects:
         }
 
         if (
-            isinstance(node.func, ast.Attribute)
+            ATTRIBUTE.covers(node.func)
             and node.func.attr in mutating_methods
-            and isinstance(node.func.value, ast.Attribute)
-            and isinstance(node.func.value.value, ast.Name)
+            and ATTRIBUTE.covers(node.func.value)
+            and NAME.covers(node.func.value.value)
             and node.func.value.value.id == "self"
         ):
             violations.extend(
-                violation(
+                REPORT.of(
                     node,
-                    ErrorCodes.EO019.format(
+                    EO019.format(
                         name=f"call to mutating method 'self.{node.func.value.attr}.{node.func.attr}()'"
                     ),
                 )
@@ -279,7 +299,10 @@ class NoMutableObjects:
         return violations
 
     def _check_subscript_mutation(
-        self, node: ast.Subscript, current_class: ast.ClassDef | None
+        self,
+        node: ast.Subscript,
+        current_class: ast.ClassDef | None,
+        parents: Parents,
     ) -> Violations:
         """Check for subscript mutations like self.data[0] = value."""
         violations: Violations = []
@@ -287,17 +310,17 @@ class NoMutableObjects:
         if not current_class:
             return violations
 
-        parent = getattr(node, "_parent", None)
-        if parent and isinstance(parent, ast.Assign):
+        parent = parents.above(node)
+        if parent and ASSIGN.covers(parent):
             if (
-                isinstance(node.value, ast.Attribute)
-                and isinstance(node.value.value, ast.Name)
+                ATTRIBUTE.covers(node.value)
+                and NAME.covers(node.value.value)
                 and node.value.value.id == "self"
             ):
                 violations.extend(
-                    violation(
+                    REPORT.of(
                         parent,
-                        ErrorCodes.EO020.format(
+                        EO020.format(
                             name=f"subscript assignment to 'self.{node.value.attr}[...]'"
                         ),
                     )

@@ -1,25 +1,34 @@
 """Shared mutable state checker for detecting dangerous sharing patterns."""
 
 import ast
+from typing import final
 
-from ..base import ErrorCodes, Violations, violation
+from ..base import EO023, REPORT, Instance, Violations
+
+FUNCTION_DEF = Instance(ast.FunctionDef)
+MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
+    ast.List,
+    ast.Dict,
+    ast.Set,
+))
 
 
-class SharedMutableStateChecker:
+@final
+class SharedMutableState:
     """Detects shared mutable state violations."""
 
-    def check_shared_state(self, node: ast.ClassDef) -> Violations:
+    def check_shared_state(self, node: ast.ClassDef) -> Violations:  # noqa: EO011
         """Check for shared mutable state patterns."""
         violations = []
 
         for item in node.body:
-            if isinstance(item, ast.FunctionDef):
+            if FUNCTION_DEF.covers(item):
                 for default in item.args.defaults:
                     if self._is_mutable_default(default):
                         violations.extend(
-                            violation(
+                            REPORT.of(
                                 item,
-                                ErrorCodes.EO023.format(
+                                EO023.format(
                                     name=f"mutable default argument in {item.name}"
                                 ),
                             )
@@ -29,4 +38,4 @@ class SharedMutableStateChecker:
 
     def _is_mutable_default(self, node: ast.AST) -> bool:
         """Check if a default argument is mutable."""
-        return isinstance(node, ast.List | ast.Dict | ast.Set)
+        return MUTABLE_LITERAL.covers(node)

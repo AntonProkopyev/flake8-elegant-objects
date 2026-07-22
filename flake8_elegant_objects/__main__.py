@@ -5,21 +5,22 @@ import ast
 import sys
 
 from .base import ElegantObjectsCore
+from .noqa import Noqa
 
 
-def main() -> None:
+def main() -> None:  # noqa: EO009
     """Standalone command-line interface."""
-    parser = argparse.ArgumentParser(
+    arguments = argparse.ArgumentParser(
         description="Check Python files for Elegant Objects violations"
     )
-    parser.add_argument("files", nargs="+", help="Python files to check")
-    parser.add_argument(
+    arguments.add_argument("files", nargs="+", help="Python files to check")
+    arguments.add_argument(
         "--show-source",
         action="store_true",
         help="Show source code context for violations",
     )
 
-    args = parser.parse_args()
+    args = arguments.parse_args()
 
     total_errors = 0
 
@@ -35,7 +36,12 @@ def main() -> None:
             core = ElegantObjectsCore(tree)
 
             file_errors = 0
-            violations = core.check_violations()
+            noqa = Noqa(source)
+            violations = [
+                found
+                for found in core.check_violations()
+                if noqa.allows(found.line, found.message.split(" ")[0])
+            ]
 
             for violation in violations:
                 print(

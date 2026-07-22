@@ -90,7 +90,8 @@ def test_array_properties_with_loop(self):
         self.assertGreaterEqual(num, 0)
 """
         violations = self._check_code(code)
-        assert len(violations) == 2  # Assignment + loop, multiple assertions violation
+        # Assignment, loop, and an assertion that does not close the method
+        assert len(violations) == 3
 
     def test_no_assertion_violation(self) -> None:
         """Test that methods without assertions are detected as violations."""
@@ -151,3 +152,45 @@ def test_assertThat_example(self):
 """
         violations = self._check_code(code)
         assert len(violations) == 0
+
+    def test_docstring_is_not_a_statement(self) -> None:
+        """Test that a docstring does not count as code in a test."""
+        code = '''
+def test_cents_are_counted(self):
+    """Cents are counted."""
+    assert money.cents() == 100
+'''
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_assertion_must_be_last(self) -> None:
+        """Test that nothing may follow the assertion."""
+        code = """
+def test_cents_are_counted(self):
+    assert money.cents() == 100
+    pass
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "last statement" in violations[0]
+
+    def test_assertion_last_is_valid(self) -> None:
+        """Test that an assertion closing the method is accepted."""
+        code = """
+def test_cents_are_counted(self):
+    pass
+    assert money.cents() == 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_two_assertions_report_the_count(self) -> None:
+        """Test that the message names the real fault when there are two."""
+        code = """
+def test_cents_are_counted(self):
+    assert money.cents() == 100
+    assert money.cents() == 200
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "one assertion" in violations[0]

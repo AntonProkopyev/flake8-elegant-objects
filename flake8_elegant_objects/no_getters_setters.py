@@ -1,17 +1,27 @@
 """No getters/setters principle checker for Elegant Objects violations."""
 
 import ast
+from typing import final
 
-from .base import ErrorCodes, Source, Violations, is_method, violation
+from .base import EO007, METHOD, REPORT, Instance, Principle, Source, Violations
+
+ATTRIBUTE = Instance(ast.Attribute)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+NAME = Instance(ast.Name)
+RETURN = Instance(ast.Return)
 
 
-class NoGettersSetters:
+@final
+class NoAccessMethods(Principle):
     """Checks for getter/setter methods (EO007)."""
 
     def check(self, source: Source) -> Violations:
         """Check source for getter/setter violations."""
         node = source.node
-        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if not FUNCTION.covers(node):
             return []
         return self._check_getters_setters(node)
 
@@ -19,14 +29,37 @@ class NoGettersSetters:
         self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> Violations:
         """Check for getter/setter methods."""
-        if not is_method(node) or node.name.startswith("_"):
+        if not METHOD.covers(node) or node.name.startswith("_"):
             return []
 
-        # Skip methods with @property decorator
+        # Property setters are setters, whatever the method is called
         for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Name) and decorator.id == "property":
+            if ATTRIBUTE.covers(decorator) and decorator.attr == "setter":
+                return REPORT.of(node, EO007.format(name=node.name))
+
+        # Properties that only hand back an attribute are getters
+        for decorator in node.decorator_list:
+            if NAME.covers(decorator) and decorator.id == "property":
+                if self._returns_attribute(node):
+                    return REPORT.of(node, EO007.format(name=node.name))
                 return []
 
+        return self._check_names(node)
+
+    def _returns_attribute(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        """Check if a method body is a single return of one's own attribute."""
+        if len(node.body) != 1:
+            return False
+        statement = node.body[0]
+        return (
+            RETURN.covers(statement)
+            and ATTRIBUTE.covers(statement.value)
+            and NAME.covers(statement.value.value)
+            and statement.value.value.id == "self"
+        )
+
+    def _check_names(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> Violations:
+        """Check for Java-style getter and setter names."""
         name = node.name.lower()
         original_name = node.name
 
@@ -40,7 +73,7 @@ class NoGettersSetters:
             )
             or name == "get"
         ):
-            return violation(node, ErrorCodes.EO007.format(name=node.name))
+            return REPORT.of(node, EO007.format(name=node.name))
 
         # Check for setter patterns
         if (
@@ -52,6 +85,6 @@ class NoGettersSetters:
             )
             or name == "set"
         ):
-            return violation(node, ErrorCodes.EO007.format(name=node.name))
+            return REPORT.of(node, EO007.format(name=node.name))
 
         return []

@@ -6,12 +6,20 @@ on:
   pull_request:
     branches: [master, main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
     steps:
       - name: Checkout code
@@ -21,24 +29,64 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: 'latest'
+          enable-cache: true
 
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Check that the lockfile matches pyproject.toml
+        run: uv lock --check
+
       - name: Install dependencies
         run: uv sync
-
-      - name: Run linting
-        run: uv run ruff check .
-
-      - name: Run formatting check
-        run: uv run ruff format --check .
-
-      - name: Run type checking
-        run: uv run mypy .
 
       - name: Run unit tests
         run: uv run pytest tests/ -v
 
+  package:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.10
+
       - name: Build package
         run: uv build
+
+      # The 1.1.1 release shipped a console script that raised ImportError.
+      # An editable install hides that class of fault, so the built wheel is
+      # installed into an environment of its own and actually run.
+      - name: Install the built wheel into a clean environment
+        run: |
+          uv venv /tmp/clean
+          uv pip install --python /tmp/clean/bin/python dist/*.whl flake8
+
+      - name: Run the console script from the wheel
+        run: |
+          printf 'from typing import final\n\n@final\nclass Money:\n    def __init__(self, cents):\n        self.cents = cents\n' > /tmp/clean_sample.py
+          /tmp/clean/bin/flake8-elegant-objects /tmp/clean_sample.py
+
+      - name: Run the plugin through flake8 from the wheel
+        run: |
+          printf 'class Parser:\n    def parse(self, text):\n        return None\n' > /tmp/dirty_sample.py
+          /tmp/clean/bin/python -m flake8 --version | grep flake8-elegant-objects
+          if /tmp/clean/bin/python -m flake8 --select=EO /tmp/dirty_sample.py; then
+            echo "the plugin reported nothing on code that violates EO001"
+            exit 1
+          fi
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

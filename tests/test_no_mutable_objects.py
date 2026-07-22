@@ -2,7 +2,7 @@
 
 import ast
 
-from flake8_elegant_objects.base import Source
+from flake8_elegant_objects.base import ElegantObjectsCore, Source
 from flake8_elegant_objects.no_mutable_objects import NoMutableObjects
 
 
@@ -250,9 +250,12 @@ class UserManager:
         self.metadata[key] = value  # Mutation via subscript
 """
         violations = self._check_code(code)
-        # Should have instance attribute (EO016) and subscript mutation (EO020)
         assert any("EO016" in v for v in violations)  # Instance attribute
-        # FIXME: EO020 subscript mutations not detected - needs proper AST parent tracking
+        # EO020 needs the parent map that ElegantObjectsCore builds
+        whole = [
+            v.message for v in ElegantObjectsCore(ast.parse(code)).check_violations()
+        ]
+        assert any("EO020" in v for v in whole)
 
     def test_nested_mutable_structures(self) -> None:
         """Test detection of nested mutable data structures."""
@@ -277,8 +280,7 @@ class Service:
         return items
 """
         violations = self._check_code(code)
-        # Note: This test depends on enhanced checker detecting mutable defaults
-        assert isinstance(violations, list)  # Basic sanity check
+        assert any("EO023" in v for v in violations)
 
     def test_exposing_internal_mutable_state(self) -> None:
         """Test detection of methods that expose internal mutable state."""
@@ -291,8 +293,7 @@ class Container:
         return self._items  # Exposing mutable state (aliasing violation)
 """
         violations = self._check_code(code)
-        # This depends on enhanced aliasing detection
-        assert isinstance(violations, list)
+        assert any("EO016" in v for v in violations)
 
     def test_missing_defensive_copies(self) -> None:
         """Test detection of missing defensive copies."""
@@ -302,8 +303,7 @@ class Collection:
         self.items = items  # Direct assignment of potentially mutable parameter
 """
         violations = self._check_code(code)
-        # This depends on enhanced defensive copy detection
-        assert isinstance(violations, list)
+        assert any("EO027" in v for v in violations)
 
     def test_complex_mutation_patterns(self) -> None:
         """Test detection of complex mutation patterns."""
@@ -362,9 +362,7 @@ class SafeCollection:
             "EO019",
             "EO020",
             "EO021",
-            "EO022",
             "EO023",
-            "EO024",
             "EO025",
             "EO026",
             "EO027",
@@ -394,8 +392,8 @@ class DocumentBuilder:
         return ImmutableDocument(self._title, tuple(self._sections))
 """
         violations = self._check_code(code)
-        # Builder patterns may still trigger violations - this tests current behavior
-        assert isinstance(violations, list)
+        # Builders are not exempt: internal mutation is still mutation
+        assert any("EO019" in v for v in violations)
 
     def test_aliasing_violations_eo026(self) -> None:
         """Test detection of aliasing violations (EO026)."""

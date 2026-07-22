@@ -8,29 +8,28 @@ Based on Yegor Bugayenko's principles from elegantobjects.org
 
 import ast
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, final
 
 from .base import ElegantObjectsCore
 
 
+@final
 class ElegantObjectsPlugin:
     """Flake8 plugin to check for Elegant Objects violations."""
 
     name = "flake8-elegant-objects"
-    version = "1.1.1"
+    version = "2.0.0"
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
-        self._core = ElegantObjectsCore(tree)
 
-    def run(self) -> Iterator[tuple[int, int, str, type["ElegantObjectsPlugin"]]]:
+    def run(self) -> Iterator[tuple[int, int, str, type["ElegantObjectsPlugin"]]]:  # noqa: EO011
         """Run the checker and yield errors."""
-        violations = self._core.check_violations()
-        for violation in violations:
-            yield (violation.line, violation.column, violation.message, type(self))
+        for violation in ElegantObjectsCore(self.tree).check_violations():
+            yield (violation.line, violation.column, violation.message, type(self))  # noqa: EO010
 
 
 # Entry point for flake8 plugin registration
-def factory(_app: Any) -> type[ElegantObjectsPlugin]:
+def factory(_app: Any) -> type[ElegantObjectsPlugin]:  # noqa: EO009
     """Factory function for flake8 plugin."""
     return ElegantObjectsPlugin
