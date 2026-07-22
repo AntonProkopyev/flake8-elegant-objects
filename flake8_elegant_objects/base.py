@@ -177,13 +177,14 @@ class ElegantObjectsCore:
 
     def check_violations(self) -> list[Violation]:
         """Check for all violations in the AST tree."""
-        violations = []
-        for violation in self._visit(self.tree, None):
-            violations.append(violation)
-        return violations
+        # The principles are assembled once per tree, not once per node
+        return self._visit(self.tree, None, tuple(get_all_principles()))
 
     def _visit(
-        self, node: ast.AST, current_class: ast.ClassDef | None = None
+        self,
+        node: ast.AST,
+        current_class: ast.ClassDef | None,
+        principles: tuple[Principle, ...],
     ) -> list[Violation]:
         """Visit AST nodes and check for violations."""
         violations = []
@@ -191,20 +192,22 @@ class ElegantObjectsCore:
         if isinstance(node, ast.ClassDef):
             current_class = node
 
-        violations.extend(self._check_principles(node, current_class))
+        violations.extend(self._check_principles(node, current_class, principles))
 
         for child in ast.iter_child_nodes(node):
-            violations.extend(self._visit(child, current_class))
+            violations.extend(self._visit(child, current_class, principles))
 
         return violations
 
     def _check_principles(
-        self, node: ast.AST, current_class: ast.ClassDef | None
+        self,
+        node: ast.AST,
+        current_class: ast.ClassDef | None,
+        principles: tuple[Principle, ...],
     ) -> list[Violation]:
         """Check all principles against the given node."""
         violations = []
         source = Source(node, current_class, self.tree)
-        principles = get_all_principles()
 
         for principle in principles:
             principle_violations = principle.check(source)
