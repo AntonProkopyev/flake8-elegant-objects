@@ -146,25 +146,24 @@ class NoImpureTests(Principle):
         """Check if assertion exists anywhere in the call chain."""
         current = call
         while CALL.covers(current):
+            # A plain name is the head of the chain: there is nothing
+            # beneath it to descend into, so it answers and the walk ends.
+            # Left to loop, it would answer the same question forever.
             if NAME.covers(current.func):
-                if (
+                return (
                     current.func.id.startswith("assert")
                     or current.func.id == "assertThat"
-                ):
-                    return True
-            elif ATTRIBUTE.covers(current.func):
-                if (
-                    current.func.attr.startswith("assert")
-                    or current.func.attr == "assertThat"
-                ):
-                    return True
-                # Move to the next level in the chain
-                if CALL.covers(current.func.value):
-                    current = current.func.value
-                else:
-                    break
-            else:
+                )
+            if not ATTRIBUTE.covers(current.func):
                 break
+            if (
+                current.func.attr.startswith("assert")
+                or current.func.attr == "assertThat"
+            ):
+                return True
+            if not CALL.covers(current.func.value):
+                break
+            current = current.func.value
         return False
 
     def _is_assertion_context_manager(self, with_stmt: ast.With) -> bool:

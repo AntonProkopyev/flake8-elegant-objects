@@ -2,7 +2,7 @@
 
 import ast
 
-from flake8_elegant_objects.base import Source
+from flake8_elegant_objects.base import Parents, Source
 from flake8_elegant_objects.no_null import NoNull
 
 
@@ -14,9 +14,14 @@ class TestNoNullPrinciple:
         tree = ast.parse(code)
         checker = NoNull()
         violations = []
+        held: dict[ast.AST, ast.AST] = {}
+        for node in ast.walk(tree):
+            for child in ast.iter_child_nodes(node):
+                held[child] = node
+        parents = Parents(held)
 
         def visit(node: ast.AST) -> None:
-            source = Source(node, None, tree)
+            source = Source(node, None, tree, parents)
             violations.extend(checker.check(source))
             for child in ast.iter_child_nodes(node):
                 visit(child)
