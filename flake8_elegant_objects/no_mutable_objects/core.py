@@ -3,12 +3,26 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Source, Violations, violation
+from ..base import ErrorCodes, Instance, Source, Violations, violation
 from .base import is_mutable_type
 from .copy_on_write_checker import CopyOnWrite
 from .deep_checker import DeepMutability
 from .pattern_detectors import MutablePatterns
 from .shared_state_checker import SharedMutableState
+
+CLASS_DEF = Instance(ast.ClassDef)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+ASSIGN = Instance(ast.Assign)
+AUG_ASSIGN = Instance(ast.AugAssign)
+CALL = Instance(ast.Call)
+SUBSCRIPT = Instance(ast.Subscript)
+MODULE = Instance(ast.Module)
+NAME = Instance(ast.Name)
+ATTRIBUTE = Instance(ast.Attribute)
+CONSTANT = Instance(ast.Constant)
 
 
 @final
@@ -25,10 +39,10 @@ class NoMutableObjects:
         node = source.node
         violations = []
 
-        if isinstance(node, ast.ClassDef):
+        if CLASS_DEF.covers(node):
             violations.extend(self._check_mutable_class(node))
             violations.extend(self.shared_state_checker.check_shared_state(node))
-        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        elif FUNCTION.covers(node):
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
             )
@@ -40,24 +54,24 @@ class NoMutableObjects:
                         node, source.current_class.name
                     )
                 )
-        elif isinstance(node, ast.Assign):
+        elif ASSIGN.covers(node):
             violations.extend(
                 self._check_assignment_mutation(node, source.current_class)
             )
-        elif isinstance(node, ast.AugAssign):
+        elif AUG_ASSIGN.covers(node):
             violations.extend(
                 self._check_augmented_assignment(node, source.current_class)
             )
-        elif isinstance(node, ast.Call):
+        elif CALL.covers(node):
             violations.extend(
                 self._check_mutating_method_call(node, source.current_class)
             )
-        elif isinstance(node, ast.Subscript):
+        elif SUBSCRIPT.covers(node):
             violations.extend(
                 self._check_subscript_mutation(node, source.current_class)
             )
 
-        if source.tree and isinstance(source.node, ast.Module):
+        if source.tree and MODULE.covers(source.node):
             violations.extend(self.deep_checker.check_deep_mutations(source.tree))
 
         return violations
@@ -91,9 +105,9 @@ class NoMutableObjects:
         has_frozen = False
 
         for decorator in decorators:
-            if isinstance(decorator, ast.Name) and decorator.id == "dataclass":
+            if NAME.covers(decorator) and decorator.id == "dataclass":
                 has_dataclass = True
-            elif isinstance(decorator, ast.Call) and self._is_dataclass_call(decorator):
+            elif CALL.covers(decorator) and self._is_dataclass_call(decorator):
                 has_dataclass = True
                 has_frozen = self._check_frozen_keyword(decorator.keywords)
 
@@ -101,14 +115,14 @@ class NoMutableObjects:
 
     def _is_dataclass_call(self, decorator: ast.Call) -> bool:
         """Check if decorator call is a dataclass."""
-        return isinstance(decorator.func, ast.Name) and decorator.func.id == "dataclass"
+        return NAME.covers(decorator.func) and decorator.func.id == "dataclass"
 
     def _check_frozen_keyword(self, keywords: list[ast.keyword]) -> bool:
         """Check if frozen=True is set in dataclass keywords."""
         for keyword in keywords:
             if (
                 keyword.arg == "frozen"
-                and isinstance(keyword.value, ast.Constant)
+                and CONSTANT.covers(keyword.value)
                 and keyword.value.value is True
             ):
                 return True
@@ -119,7 +133,7 @@ class NoMutableObjects:
         violations: Violations = []
 
         for stmt in node.body:
-            if isinstance(stmt, ast.Assign):
+            if ASSIGN.covers(stmt):
                 violations.extend(self._check_assignment_targets(stmt))
 
         return violations
@@ -129,7 +143,7 @@ class NoMutableObjects:
         violations: Violations = []
 
         for target in stmt.targets:
-            if isinstance(target, ast.Name) and is_mutable_type(stmt.value):
+            if NAME.covers(target) and is_mutable_type(stmt.value):
                 violations.extend(
                     violation(
                         stmt,
@@ -152,11 +166,11 @@ class NoMutableObjects:
 
         if node.name == "__init__":
             for stmt in ast.walk(node):
-                if isinstance(stmt, ast.Assign):
+                if ASSIGN.covers(stmt):
                     for target in stmt.targets:
                         if (
-                            isinstance(target, ast.Attribute)
-                            and isinstance(target.value, ast.Name)
+                            ATTRIBUTE.covers(target)
+                            and NAME.covers(target.value)
                             and target.value.id == "self"
                             and is_mutable_type(stmt.value)
                         ):
@@ -182,13 +196,13 @@ class NoMutableObjects:
 
         for target in node.targets:
             if (
-                isinstance(target, ast.Attribute)
-                and isinstance(target.value, ast.Name)
+                ATTRIBUTE.covers(target)
+                and NAME.covers(target.value)
                 and target.value.id == "self"
             ):
                 parent: ast.AST | None = node
                 while parent:
-                    if isinstance(parent, ast.FunctionDef | ast.AsyncFunctionDef):
+                    if FUNCTION.covers(parent):
                         if parent.name != "__init__":
                             violations.extend(
                                 violation(
@@ -214,8 +228,8 @@ class NoMutableObjects:
 
         # Check for self.attr += value
         if (
-            isinstance(node.target, ast.Attribute)
-            and isinstance(node.target.value, ast.Name)
+            ATTRIBUTE.covers(node.target)
+            and NAME.covers(node.target.value)
             and node.target.value.id == "self"
         ):
             violations.extend(
@@ -255,10 +269,10 @@ class NoMutableObjects:
         }
 
         if (
-            isinstance(node.func, ast.Attribute)
+            ATTRIBUTE.covers(node.func)
             and node.func.attr in mutating_methods
-            and isinstance(node.func.value, ast.Attribute)
-            and isinstance(node.func.value.value, ast.Name)
+            and ATTRIBUTE.covers(node.func.value)
+            and NAME.covers(node.func.value.value)
             and node.func.value.value.id == "self"
         ):
             violations.extend(
@@ -282,10 +296,10 @@ class NoMutableObjects:
             return violations
 
         parent = getattr(node, "_parent", None)
-        if parent and isinstance(parent, ast.Assign):
+        if parent and ASSIGN.covers(parent):
             if (
-                isinstance(node.value, ast.Attribute)
-                and isinstance(node.value.value, ast.Name)
+                ATTRIBUTE.covers(node.value)
+                and NAME.covers(node.value.value)
                 and node.value.value.id == "self"
             ):
                 violations.extend(

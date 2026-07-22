@@ -3,7 +3,13 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Violations, violation
+from ..base import ErrorCodes, Instance, Violations, violation
+
+ASSIGN = Instance(ast.Assign)
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+NAME = Instance(ast.Name)
+RETURN = Instance(ast.Return)
 
 
 @final
@@ -20,11 +26,11 @@ class CopyOnWrite:
             return violations
 
         for stmt in ast.walk(node):
-            if isinstance(stmt, ast.Assign):
+            if ASSIGN.covers(stmt):
                 for target in stmt.targets:
                     if (
-                        isinstance(target, ast.Attribute)
-                        and isinstance(target.value, ast.Name)
+                        ATTRIBUTE.covers(target)
+                        and NAME.covers(target.value)
                         and target.value.id == "self"
                     ):
                         if not self._returns_new_instance(node, class_name):
@@ -44,7 +50,7 @@ class CopyOnWrite:
     ) -> bool:
         """Check if function returns a new instance."""
         for node in ast.walk(func):
-            if isinstance(node, ast.Return) and node.value:
+            if RETURN.covers(node) and node.value:
                 if self._is_class_constructor_call(node.value, class_name):
                     return True
         return False
@@ -52,7 +58,7 @@ class CopyOnWrite:
     def _is_class_constructor_call(self, call_node: ast.expr, class_name: str) -> bool:
         """Check if call is a constructor for the given class."""
         return (
-            isinstance(call_node, ast.Call)
-            and isinstance(call_node.func, ast.Name)
+            CALL.covers(call_node)
+            and NAME.covers(call_node.func)
             and call_node.func.id == class_name
         )

@@ -3,7 +3,20 @@
 import ast
 from typing import Any, final
 
-from ..base import Violations
+from ..base import Instance, Violations
+
+CALL = Instance(ast.Call)
+NAME = Instance(ast.Name)
+MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
+    ast.List,
+    ast.Dict,
+    ast.Set,
+))
+MUTABLE_COMPREHENSION: Instance[ast.ListComp | ast.DictComp | ast.SetComp] = Instance((
+    ast.ListComp,
+    ast.DictComp,
+    ast.SetComp,
+))
 
 
 @final
@@ -49,11 +62,11 @@ class MutableState:
 
 def is_mutable_type(node: ast.AST) -> bool:
     """Check if a node represents a mutable type."""
-    if isinstance(node, ast.List | ast.Dict | ast.Set):
+    if MUTABLE_LITERAL.covers(node):
         return True
 
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+    if CALL.covers(node) and NAME.covers(node.func):
         mutable_types = {"list", "dict", "set", "bytearray", "deque", "defaultdict"}
         return node.func.id in mutable_types
 
-    return bool(isinstance(node, ast.ListComp | ast.DictComp | ast.SetComp))
+    return bool(MUTABLE_COMPREHENSION.covers(node))

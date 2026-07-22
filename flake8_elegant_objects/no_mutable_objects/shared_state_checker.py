@@ -3,7 +3,14 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Violations, violation
+from ..base import ErrorCodes, Instance, Violations, violation
+
+FUNCTION_DEF = Instance(ast.FunctionDef)
+MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
+    ast.List,
+    ast.Dict,
+    ast.Set,
+))
 
 
 @final
@@ -15,7 +22,7 @@ class SharedMutableState:
         violations = []
 
         for item in node.body:
-            if isinstance(item, ast.FunctionDef):
+            if FUNCTION_DEF.covers(item):
                 for default in item.args.defaults:
                     if self._is_mutable_default(default):
                         violations.extend(
@@ -31,4 +38,4 @@ class SharedMutableState:
 
     def _is_mutable_default(self, node: ast.AST) -> bool:
         """Check if a default argument is mutable."""
-        return isinstance(node, ast.List | ast.Dict | ast.Set)
+        return MUTABLE_LITERAL.covers(node)

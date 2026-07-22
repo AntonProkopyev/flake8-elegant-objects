@@ -3,7 +3,12 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Violations, violation
+from ..base import ErrorCodes, Instance, Violations, violation
+
+ASSIGN = Instance(ast.Assign)
+ATTRIBUTE = Instance(ast.Attribute)
+NAME = Instance(ast.Name)
+RETURN = Instance(ast.Return)
 
 
 @final
@@ -18,10 +23,10 @@ class MutablePatterns:
         violations = []
 
         for stmt in ast.walk(node):
-            if isinstance(stmt, ast.Return) and stmt.value:
+            if RETURN.covers(stmt) and stmt.value:
                 if (
-                    isinstance(stmt.value, ast.Attribute)
-                    and isinstance(stmt.value.value, ast.Name)
+                    ATTRIBUTE.covers(stmt.value)
+                    and NAME.covers(stmt.value.value)
                     and stmt.value.value.id == "self"
                 ):
                     # Only flag if attribute name suggests it's mutable data
@@ -70,7 +75,7 @@ class MutablePatterns:
         param_names = [arg.arg for arg in init_node.args.args[1:]]
 
         for stmt in ast.walk(init_node):
-            if isinstance(stmt, ast.Assign):
+            if ASSIGN.covers(stmt):
                 violations.extend(
                     self._check_assignment_defensive_copy(stmt, param_names)
                 )
@@ -86,7 +91,7 @@ class MutablePatterns:
         for target in stmt.targets:
             if self._is_self_attribute(target):
                 if self._is_param_assignment(stmt.value, param_names):
-                    assert isinstance(stmt.value, ast.Name)  # Type narrowing for mypy
+                    assert NAME.covers(stmt.value)  # Type narrowing for mypy
                     violations.extend(
                         violation(
                             stmt,
@@ -101,15 +106,15 @@ class MutablePatterns:
     def _is_self_attribute(self, target: ast.expr) -> bool:
         """Check if target is a self attribute."""
         return (
-            isinstance(target, ast.Attribute)
-            and isinstance(target.value, ast.Name)
+            ATTRIBUTE.covers(target)
+            and NAME.covers(target.value)
             and target.value.id == "self"
         )
 
     def _is_param_assignment(self, value: ast.expr, param_names: list[str]) -> bool:
         """Check if value is a parameter assignment."""
         # Only flag if it's a direct parameter assignment AND likely mutable
-        if isinstance(value, ast.Name) and value.id in param_names:
+        if NAME.covers(value) and value.id in param_names:
             # Don't flag assignments of simple types (strings, numbers, etc.)
             # Only flag if parameter name suggests it could be mutable (lists, data, items, etc.)
             mutable_param_patterns = {

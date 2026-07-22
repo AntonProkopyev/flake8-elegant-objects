@@ -3,8 +3,18 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Violations, violation
+from ..base import ErrorCodes, Instance, Violations, violation
 from .base import MutableState
+
+ASSIGN = Instance(ast.Assign)
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+NAME = Instance(ast.Name)
+MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
+    ast.List,
+    ast.Dict,
+    ast.Set,
+))
 
 
 @final
@@ -52,7 +62,7 @@ class ClassInfo(ast.NodeVisitor):
     def _process_init_method(self, init_node: ast.FunctionDef) -> None:
         """Process __init__ method for instance attributes."""
         for stmt in ast.walk(init_node):
-            if isinstance(stmt, ast.Assign):
+            if ASSIGN.covers(stmt):
                 self._process_assignment(stmt)
 
     def _process_assignment(self, stmt: ast.Assign) -> None:
@@ -62,7 +72,7 @@ class ClassInfo(ast.NodeVisitor):
 
         for target in stmt.targets:
             if self._is_self_attribute(target):
-                assert isinstance(target, ast.Attribute)  # Type narrowing for mypy
+                assert ATTRIBUTE.covers(target)  # Type narrowing for mypy
                 is_mutable = self._is_mutable_value(stmt.value)
                 self.state_tracker.add_instance_attr(
                     self.current_class, target.attr, is_mutable
@@ -71,16 +81,16 @@ class ClassInfo(ast.NodeVisitor):
     def _is_self_attribute(self, target: ast.expr) -> bool:
         """Check if target is a self attribute."""
         return (
-            isinstance(target, ast.Attribute)
-            and isinstance(target.value, ast.Name)
+            ATTRIBUTE.covers(target)
+            and NAME.covers(target.value)
             and target.value.id == "self"
         )
 
     def _is_mutable_value(self, node: ast.AST) -> bool:
         """Determine if a value is mutable."""
-        if isinstance(node, ast.List | ast.Dict | ast.Set):
+        if MUTABLE_LITERAL.covers(node):
             return True
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if CALL.covers(node) and NAME.covers(node.func):
             return node.func.id in {"list", "dict", "set", "bytearray", "deque"}
         return False
 
@@ -120,14 +130,14 @@ class Mutation(ast.NodeVisitor):
 
     def _is_chained_mutation(self, node: ast.Call) -> bool:
         """Detect chained mutations like self.dict.get('key', []).append()."""
-        if isinstance(node.func, ast.Attribute):
+        if ATTRIBUTE.covers(node.func):
             if node.func.attr in {"append", "extend", "add", "update", "remove"}:
-                if isinstance(node.func.value, ast.Call):
+                if CALL.covers(node.func.value):
                     inner_call = node.func.value
                     if (
-                        isinstance(inner_call.func, ast.Attribute)
-                        and isinstance(inner_call.func.value, ast.Attribute)
-                        and isinstance(inner_call.func.value.value, ast.Name)
+                        ATTRIBUTE.covers(inner_call.func)
+                        and ATTRIBUTE.covers(inner_call.func.value)
+                        and NAME.covers(inner_call.func.value.value)
                         and inner_call.func.value.value.id == "self"
                     ):
                         return True
