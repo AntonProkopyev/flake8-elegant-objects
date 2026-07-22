@@ -46,6 +46,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for the standalone CLI and for plugin registration through flake8 itself,
   neither of which was covered before.
 - `flake8` as a development dependency.
+- A self check: the plugin runs over its own source and fails when any violation
+  count grows or a new code starts firing. The counts are debt, not a target.
+- A check that the version flake8 reports matches the one the distribution
+  declares. The two were written out independently in `pyproject.toml` and
+  `__init__.py`.
+- A coverage floor of 90 percent, which the README badge had been claiming
+  without anything enforcing it.
+
+### Changed
+
+- CI installs the built wheel into a clean environment and runs the console
+  script and `flake8 --select=EO` from it. Editable installs hide the fault
+  that shipped in 1.1.1.
+- CI checks the lockfile against `pyproject.toml`, tests Python 3.14, caches uv,
+  cancels superseded runs and restricts token permissions to reading contents.
+- Linting, formatting and type checking no longer run in both workflows. They
+  ran four times per push, once per Python version, and now run once.
 
 ## [1.1.1] - 2024-06-30
 
