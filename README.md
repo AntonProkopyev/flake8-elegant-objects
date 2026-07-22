@@ -1,230 +1,193 @@
-# Flake8 ElegantObjects Plugin
+# flake8-elegant-objects
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
+[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/AntonProkopyev/flake8-elegant-objects)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Type checked: mypy](https://img.shields.io/badge/type_checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
-[![Flake8](https://img.shields.io/badge/flake8-plugin-orange.svg)](https://flake8.pycqa.org/)
+[![EO principles respected here](https://www.elegantobjects.org/badge.svg)](https://www.elegantobjects.org)
 
-Detects violations of [Elegant Objects principles](https://www.elegantobjects.org/) including the "-er" naming principle, null usage, mutable objects, code in constructors, and getter/setter patterns.
+A flake8 plugin that checks Python against the
+[Elegant Objects](https://www.elegantobjects.org/) principles: no null, no code
+in constructors, no getters and setters, no mutable objects, no -er names, no
+static methods, no type discrimination, no public methods without a contract,
+no statements in tests beyond the assertion, no ORM, no implementation
+inheritance.
 
-## Error Codes
+Every message ends with a link to the article the rule comes from, so a code
+you have not met before explains itself.
 
-### Naming Violations (EO001-EO004)
-- `EO001`: Class name violates -er principle
-- `EO002`: Method name violates -er principle
-- `EO003`: Variable name violates -er principle
-- `EO004`: Function name violates -er principle
-
-Verb names are not violations: a method is either a noun (builder) or a verb (manipulator). Only -er nouns are reported.
-
-### Object Behavior (EO005-EO007)
-- `EO005`: Null (None) usage violates EO principle
-- `EO006`: Code in constructor violates EO principle
-- `EO007`: Getter/setter method, including `@property` accessors, violates EO principle
-
-### Mutable Object Violations (EO008, EO015-EO021, EO023, EO025-EO027)
-- `EO008`: Mutable dataclass violation
-- `EO015`: Mutable class attribute violation
-- `EO016`: Mutable instance attribute violation
-- `EO017`: Instance attribute mutation violation
-- `EO018`: Augmented assignment mutation violation
-- `EO019`: Mutating method call violation
-- `EO020`: Subscript assignment mutation violation
-- `EO021`: Chained mutation violation
-- `EO023`: Mutable default argument violation
-- `EO025`: Copy-on-write violation
-- `EO026`: Aliasing violation (exposing mutable state)
-- `EO027`: Defensive copy violation
-
-### Design and Architecture (EO009-EO014, EO028-EO029)
-- `EO009`: Static or class method, or a module level function, violates EO principle
-- `EO010`: isinstance/type casting violates EO principle (avoid type discrimination)
-- `EO011`: Public method without contract (Protocol/ABC) violates EO principle (test methods exempt)
-- `EO012`: Test method is impure: it holds statements other than its assertion,
-  holds more than one assertion, or does not close with it
-- `EO013`: ORM/ActiveRecord pattern violates EO principle
-- `EO014`: Implementation inheritance violates EO principle
-- `EO028`: Class is not final
-- `EO029`: Class holds more than four attributes
-
-## Installation
+## Install
 
 ```bash
 pip install flake8-elegant-objects
 ```
 
-## Usage
+## Run
 
-**Standalone:**
-
-```bash
-python -m flake8_elegant_objects path/to/files/*.py
-python -m flake8_elegant_objects --show-source path/to/files/*.py
-```
-
-**As flake8 plugin:**
+Through flake8, which is how most projects will want it:
 
 ```bash
-flake8 --select=EO path/to/files/
+flake8 --select=EO your_package/
 ```
 
-The plugin is automatically registered when the package is installed.
+The plugin registers itself on install; `--select=EO` narrows the run to its
+codes. Individual codes work too, and so does `# noqa: EO001`.
 
-## Philosophy
+Standalone, when you want it without flake8:
 
-Based on [Yegor Bugayenko](https://www.yegor256.com/)'s [Elegant Objects principles](https://www.elegantobjects.org/), this plugin enforces object-oriented design that treats objects as living, thinking entities rather than data containers or procedure executors.
+```bash
+python -m flake8_elegant_objects your_package/*.py
+flake8-elegant-objects --show-source your_package/*.py
+```
 
-### 1. No "-er" Entities (EO001-EO004)
+Both forms honour `noqa` comments and report the same violations.
 
-**Why?** Names ending in "-er" describe what objects _do_ rather than what they _are_, reducing them to mechanical task performers instead of equal partners in your design.
+## Codes
 
-- ❌ `class DataProcessor` → ✅ `class ProcessedData`
-- ❌ `def parser()` → ✅ `def parsed()`
-- ❌ `parser = ArgumentParser()` → ✅ `arguments = ArgumentParser()`
+**Naming.** The principle names "readers, parsers, controllers, sorters, and so
+on", so the -er and -or suffixes are matched rather than a fixed list of words.
+Ordinary nouns are allowed by their final word: `ImmutableUser` and
+`TaskCounter` pass, `Formatter` and `Recorder` do not.
 
-### 2. No Null/None (EO005)
+| | |
+|---|---|
+| `EO001` | class name ends in -er |
+| `EO002` | method name ends in -er |
+| `EO003` | variable name ends in -er |
+| `EO004` | function name ends in -er |
 
-**Why?** Null references break object-oriented thinking by representing "absence of object" - but absence cannot participate in object interactions. They lead to defensive programming and unclear contracts.
+Verb names are not violations. A method is a noun that builds or a verb that
+commands, and the principle objects to actors, not to verbs.
 
-- ❌ `return None` → ✅ Return null objects with safe default behavior
-- ❌ `if user is None:` → ✅ Use null object pattern or throw exceptions
+**Objects.**
 
-### 3. No Code in Constructors (EO006)
+| | |
+|---|---|
+| `EO005` | null used, including a bare `return` beside returns that carry a value |
+| `EO006` | a constructor doing anything beyond binding its parameters |
+| `EO007` | a getter or setter, whether spelled `get_name` or `@property` |
+| `EO009` | a static method, a class method, or a module level function |
+| `EO010` | `isinstance`, `type`, `cast`, reflection, or a `match` on classes |
+| `EO011` | a public method with no Protocol or ABC behind it |
+| `EO012` | a test holding anything but one assertion, closing with it |
+| `EO013` | an ORM or ActiveRecord call |
+| `EO014` | inheritance from something that is not a contract |
+| `EO028` | a class left open, which invites implementation inheritance |
+| `EO029` | a class holding more than four attributes |
 
-**Why?** Constructors should be about object assembly, not computation. Complex logic in constructors violates the principle that objects should be lazy and do work only when asked.
+**Mutability.** One principle, several shapes.
 
-- ❌ `self.name = name.upper()` → ✅ `self.name = name` (transform on access)
-- ❌ `self.items = [process(x) for x in data]` → ✅ `self.data = data` (process lazily)
+| | |
+|---|---|
+| `EO008` | a dataclass that is not frozen |
+| `EO015` | a mutable class attribute |
+| `EO016` | a mutable instance attribute |
+| `EO017` | an instance attribute assigned outside the constructor |
+| `EO018` | an augmented assignment to an attribute |
+| `EO019` | a call that mutates in place, such as `append` |
+| `EO020` | a subscript assignment to an attribute |
+| `EO021` | a mutation reached through a chain |
+| `EO023` | a mutable default argument |
+| `EO025` | a method that mutates where it could return a new instance |
+| `EO026` | internal mutable state handed out |
+| `EO027` | a mutable argument stored without a copy |
 
-### 4. No Getters/Setters (EO007)
+## Where this is stricter or looser than the principles
 
-**Why?** Getters and setters expose internal state, breaking encapsulation. They encourage "tell, don't ask" violations and treat objects as data containers rather than behavioral entities.
+`EO002`, `EO003` and `EO004` extend a rule about class names to methods,
+variables and functions. `EO028` and `EO029` are not on elegantobjects.org at
+all; they come from the
+[rules yegor256 gives his own agents](https://github.com/yegor256/prompt).
 
-- ❌ `def get_value()` / `def set_value()` → ✅ Objects should expose behavior, not data
-- ❌ `user.getName()` → ✅ `user.introduce_yourself()` or `user.greet(visitor)`
+`EO011` and `EO014` do not judge a base class they cannot see. A Protocol
+declared in one module and implemented in another is ordinary, and a plugin
+reading one file at a time has no evidence about an imported name. A base
+defined in the file and not a contract is still reported.
 
-### 5. No Mutable Objects (EO008, EO015-EO027)
+`EO012` allows a bare `assert` and `self.assertEqual`, because Python has no
+Hamcrest and `assertThat` would be a foreign requirement.
 
-**Why?** Mutable objects introduce temporal coupling and make reasoning about code difficult. Immutable objects are thread-safe, predictable, and easier to test. This plugin provides comprehensive detection of various mutability patterns.
+Test methods are exempt from `EO011`: they implement no contract.
 
-**Basic Mutability Issues:**
-- ❌ `@dataclass class Data` → ✅ `@dataclass(frozen=True) class Data` *(EO008)*
-- ❌ `items = []` (class attribute) → ✅ `items: tuple = ()` *(EO015)*
-- ❌ `self.data = []` (instance attribute) → ✅ `self.data: tuple = ()` *(EO016)*
+## The plugin on itself
 
-**Mutation Patterns:**
-- ❌ `self.items.append(x)` → ✅ `self.items = (*self.items, x)` *(EO019)*
-- ❌ `self.count += 1` → ✅ `return Counter(self.count + 1)` *(EO018)*
-- ❌ `self.data[key] = value` → ✅ Use immutable data structures *(EO020)*
-- ❌ `self.data = new_value` (after init) → ✅ Return new instance *(EO017)*
+It passes. Run it over its own source and nothing is reported that is not
+marked, and each mark says why:
 
-**Advanced Patterns:**
-- ❌ `def items=[]:` (mutable defaults) → ✅ `def items=None:` + null object *(EO023)*
-- ❌ `return self._items` (exposing mutable state) → ✅ `return tuple(self._items)` *(EO026)*
-- ❌ `self.items = items` (no defensive copy) → ✅ `self.items = tuple(items)` *(EO027)*
+- `EO009` and `EO010` where flake8 and `pyproject.toml` dictate a signature
+- `EO010` once inside `Instance`, the object every type check goes through,
+  because a linter reading syntax trees cannot ask a node what it is any other
+  way
+- `EO005` once, for the absence of an enclosing class, where a null object
+  would answer with lies rather than with nothing
+- `EO011` on helper methods whose contracts would cost a Protocol apiece
+- `EO014` on `Generic`, which is what keeps type narrowing alive
 
-### 6. No Static Methods (EO009)
+`tests/test_self_check.py` fixes that count, so a new suppression has to be
+argued for rather than added in passing.
 
-**Why?** Static methods belong to classes, not objects, breaking object-oriented design. They can't be overridden, can't be mocked easily, and promote procedural thinking. Every static method is a candidate for a new class.
-
-- ❌ `@staticmethod def process()` → ✅ Create dedicated objects for behavior
-- ❌ `Math.sqrt(x)` → ✅ `SquareRoot(x).value()`
-
-### 7. No Type Discrimination (EO010)
-
-**Why?** Using `isinstance`, type casting, or reflection is a form of object discrimination. It violates polymorphism by treating objects unequally based on their type rather than their behavior contracts.
-
-- ❌ `isinstance(obj, str)` → ✅ Design common interfaces and use polymorphism
-- ❌ `if type(x) == int:` → ✅ Let objects decide how to behave
-
-### 8. No Public Methods Without Contracts (EO011)
-
-**Why?** Public methods without explicit contracts (Protocol/ABC) create implicit dependencies and unclear expectations. Contracts make object collaboration explicit and testable.
-
-- ❌ `class Service:` with ad-hoc public methods → ✅ `class Service(Protocol):` with defined contracts
-- ❌ Implicit interfaces → ✅ Explicit protocols that can be tested and verified
-
-### 9. Test Methods: Only assertThat (EO012)
-
-**Why?** Test methods should contain only one assertion statement (preferably `assertThat`). Multiple statements create complex tests that are hard to understand and maintain. Each test should verify one specific behavior.
-
-- ❌ `x = 5; y = calculate(x); assert y > 0` → ✅ `assertThat(calculate(5), is_(greater_than(0)))`
-- ❌ Multiple assertions per test → ✅ One focused assertion per test
-
-### 10. No ORM/ActiveRecord (EO013)
-
-**Why?** ORM and ActiveRecord patterns mix data persistence concerns with business logic, violating single responsibility. They create anemic domain models and tight coupling to databases.
-
-- ❌ `user.save()`, `Model.find()` → ✅ Separate repository objects
-- ❌ Mixing persistence with business logic → ✅ Clean separation of concerns
-
-### 11. No Implementation Inheritance (EO014)
-
-**Why?** Implementation inheritance creates tight coupling between parent and child classes, making code fragile and hard to test. It violates composition over inheritance and creates deep hierarchies that are difficult to understand.
-
-- ❌ `class UserList(list):` → ✅ `class UserList:` with composition
-- ❌ Inheriting concrete implementations → ✅ Inherit only from abstractions (ABC/Protocol)
-
-The plugin detects the "hall of shame" naming patterns: Manager, Controller, Helper, Handler, Writer, Reader, Converter, Validator, Router, Dispatcher, Observer, Listener, Sorter, Encoder, Decoder, Analyzer, etc.
-
-## Configuration
-
-The plugin is integrated with flake8. Add to your `.flake8` config:
+## Configure
 
 ```ini
 [flake8]
 select = E,W,F,EO
 per-file-ignores =
-    tests/*:EO012  # Allow non-assertThat in tests if needed
+    tests/*:EO011,EO012
 ```
 
-## Development
+If you use ruff alongside, tell it these codes belong to someone else, or it
+will strip the `noqa` comments that name them:
 
-### Testing
+```toml
+[tool.ruff.lint]
+external = ["EO"]
+```
 
-Run all tests:
+## Develop
 
 ```bash
-python -m pytest tests/ -v
+uv sync
+uv run pytest tests/
+uv run ruff check . && uv run ruff format --check .
+uv run mypy .
 ```
 
-### Code Quality
-
-```bash
-# Type checking
-mypy flake8_elegant_objects/
-
-# Linting and formatting
-ruff check flake8_elegant_objects/
-ruff format flake8_elegant_objects/
-```
-
-### Project Structure
+### Layout
 
 ```
 flake8_elegant_objects/
-├── __init__.py              # Main plugin entry point
-├── __main__.py              # CLI interface
-├── base.py                  # Core types, error codes, and base classes
-├── no_constructor_code.py   # EO006: No code in constructors
-├── no_er_name.py           # EO001-EO004: No -er naming violations
-├── no_getters_setters.py   # EO007: No getter/setter methods
-├── no_implementation_inheritance.py  # EO014: No implementation inheritance
-├── no_impure_tests.py      # EO012: Test methods with single assertions
-├── no_null.py              # EO005: No None/null usage
-├── no_orm.py               # EO013: No ORM/ActiveRecord patterns
-├── no_public_methods_without_contracts.py  # EO011: Methods need contracts
-├── no_static.py            # EO009: No static methods
-├── no_type_discrimination.py  # EO010: No isinstance/type casting
-└── no_mutable_objects/     # EO008, EO015-EO027: Mutability detection
-    ├── __init__.py         # Package initialization
-    ├── base.py             # Shared utilities and state tracking
-    ├── core.py             # Main orchestrator for all mutable object checks
-    ├── copy_on_write_checker.py  # EO025: Copy-on-write pattern validation
-    ├── deep_checker.py     # Cross-class mutation analysis
-    ├── pattern_detectors.py # EO026-EO027: Aliasing and defensive copy detection
-    └── shared_state_checker.py  # EO023: Shared mutable state detection
+├── __init__.py                  # the flake8 plugin
+├── __main__.py                  # the standalone command
+├── base.py                      # Instance, Source, Violation, messages
+├── links.py                     # the article behind each code
+├── noqa.py                      # suppression comments outside flake8
+├── no_constructor_code.py       # EO006
+├── no_er_name.py                # EO001-EO004
+├── no_getters_setters.py        # EO007
+├── no_implementation_inheritance.py  # EO014
+├── no_impure_tests.py           # EO012
+├── no_null.py                   # EO005
+├── no_open_classes.py           # EO028, EO029
+├── no_orm.py                    # EO013
+├── no_public_methods_without_contracts.py  # EO011
+├── no_static.py                 # EO009
+├── no_type_discrimination.py    # EO010
+└── no_mutable_objects/          # EO008, EO015-EO027
+    ├── base.py                  # what counts as mutable
+    ├── core.py                  # the orchestrator
+    ├── copy_on_write_checker.py # EO025
+    ├── deep_checker.py          # mutations across a class
+    ├── pattern_detectors.py     # EO026, EO027
+    └── shared_state_checker.py  # shared mutable state
 ```
+
+## Reading
+
+- [Elegant Objects](https://www.elegantobjects.org/), the principles themselves
+- [Object Thinking](http://amzn.to/2BVeiNl) by David West
+- [Elegant Objects](http://www.yegor256.com/elegant-objects.html) vol. 1 and 2
+  by Yegor Bugayenko
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
