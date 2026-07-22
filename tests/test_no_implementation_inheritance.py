@@ -58,6 +58,71 @@ class Dollars(Money):
         assert len(violations) == 1
         assert "EO014" in violations[0]
 
+    def test_relative_import_base_is_unjudged(self) -> None:
+        """Test that a base imported from a sibling module is not accused."""
+        code = """
+from .contracts import Money
+
+class Dollars(Money):
+    def cents(self) -> int:
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_absolute_import_base_is_unjudged(self) -> None:
+        """Test that a base imported by package path is not accused."""
+        code = """
+from mypackage.contracts import Money
+
+class Dollars(Money):
+    def cents(self) -> int:
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_aliased_import_base_is_unjudged(self) -> None:
+        """Test that a base imported under another name is not accused."""
+        code = """
+from .contracts import Money as Currency
+
+class Dollars(Currency):
+    def cents(self) -> int:
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_module_attribute_base_is_unjudged(self) -> None:
+        """Test that a base reached through an imported module is not accused."""
+        code = """
+import mypackage.contracts as contracts
+
+class Dollars(contracts.Money):
+    def cents(self) -> int:
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
+    def test_shadowed_import_still_judged_by_local_definition(self) -> None:
+        """Test that a base defined here is judged even when a name is imported."""
+        code = """
+from .contracts import Money
+
+class Money:
+    def cents(self) -> int:
+        return 0
+
+class Dollars(Money):
+    def cents(self) -> int:
+        return 100
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO014" in violations[0]
+
 
 class TestNoImplementationInheritance:
     """Test cases for implementation inheritance violations detection."""

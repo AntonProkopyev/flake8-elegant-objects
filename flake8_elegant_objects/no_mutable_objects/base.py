@@ -20,37 +20,19 @@ MUTABLE_COMPREHENSION: Instance[ast.ListComp | ast.DictComp | ast.SetComp] = Ins
 
 
 @final
-class MutableState:
-    """Tracks mutable state across class definitions."""
+class MutableType:
+    """A syntax node, asked whether it builds a mutable value."""
 
-    def __init__(self) -> None:
-        self.instance_attrs: dict[str, set[str]] = {}
-        self.mutable_attrs: dict[str, set[str]] = {}
+    def covers(self, node: ast.AST) -> bool:
+        """Answer whether the node represents a mutable type."""
+        if MUTABLE_LITERAL.covers(node):
+            return True
 
-    def add_instance_attr(
-        self, class_name: str, attr_name: str, is_mutable: bool
-    ) -> None:
-        """Track instance attribute and whether it's mutable."""
-        if class_name not in self.instance_attrs:
-            self.instance_attrs[class_name] = set()
-            self.mutable_attrs[class_name] = set()
+        if CALL.covers(node) and NAME.covers(node.func):
+            mutable_types = {"list", "dict", "set", "bytearray", "deque", "defaultdict"}
+            return node.func.id in mutable_types
 
-        self.instance_attrs[class_name].add(attr_name)
-        if is_mutable:
-            self.mutable_attrs[class_name].add(attr_name)
-
-    def is_mutable_attr(self, class_name: str, attr_name: str) -> bool:
-        """Check if an attribute is known to be mutable."""
-        return attr_name in self.mutable_attrs.get(class_name, set())
+        return bool(MUTABLE_COMPREHENSION.covers(node))
 
 
-def is_mutable_type(node: ast.AST) -> bool:
-    """Check if a node represents a mutable type."""
-    if MUTABLE_LITERAL.covers(node):
-        return True
-
-    if CALL.covers(node) and NAME.covers(node.func):
-        mutable_types = {"list", "dict", "set", "bytearray", "deque", "defaultdict"}
-        return node.func.id in mutable_types
-
-    return bool(MUTABLE_COMPREHENSION.covers(node))
+MUTABLE_TYPE = MutableType()

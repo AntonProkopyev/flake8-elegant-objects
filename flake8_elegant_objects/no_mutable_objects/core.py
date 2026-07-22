@@ -4,7 +4,7 @@ import ast
 from typing import final
 
 from ..base import ErrorCodes, Instance, Parents, Source, Violations, violation
-from .base import is_mutable_type
+from .base import MUTABLE_TYPE
 from .copy_on_write_checker import CopyOnWrite
 from .deep_checker import DeepMutability
 from .pattern_detectors import MutablePatterns
@@ -29,11 +29,6 @@ CONSTANT = Instance(ast.Constant)
 class NoMutableObjects:
     """Checks for mutable object violations (EO008) with enhanced detection."""
 
-    def __init__(self) -> None:
-        self.deep_checker = DeepMutability()
-        self.shared_state_checker = SharedMutableState()
-        self.copy_on_write_checker = CopyOnWrite()
-
     def check(self, source: Source) -> Violations:
         """Check source for mutable object violations with enhanced detection."""
         node = source.node
@@ -41,7 +36,7 @@ class NoMutableObjects:
 
         if CLASS_DEF.covers(node):
             violations.extend(self._check_mutable_class(node))
-            violations.extend(self.shared_state_checker.check_shared_state(node))
+            violations.extend(SharedMutableState().check_shared_state(node))
         elif FUNCTION.covers(node):
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
@@ -50,9 +45,7 @@ class NoMutableObjects:
             violations.extend(MutablePatterns().detect_defensive_copy_missing(node))
             if source.current_class:
                 violations.extend(
-                    self.copy_on_write_checker.check_copy_on_write(
-                        node, source.current_class.name
-                    )
+                    CopyOnWrite().check_copy_on_write(node, source.current_class.name)
                 )
         elif ASSIGN.covers(node):
             violations.extend(
@@ -76,7 +69,7 @@ class NoMutableObjects:
             )
 
         if source.tree and MODULE.covers(source.node):
-            violations.extend(self.deep_checker.check_deep_mutations(source.tree))
+            violations.extend(DeepMutability().check_deep_mutations(source.tree))
 
         return violations
 
@@ -147,7 +140,7 @@ class NoMutableObjects:
         violations: Violations = []
 
         for target in stmt.targets:
-            if NAME.covers(target) and is_mutable_type(stmt.value):
+            if NAME.covers(target) and MUTABLE_TYPE.covers(stmt.value):
                 violations.extend(
                     violation(
                         stmt,
@@ -176,7 +169,7 @@ class NoMutableObjects:
                             ATTRIBUTE.covers(target)
                             and NAME.covers(target.value)
                             and target.value.id == "self"
-                            and is_mutable_type(stmt.value)
+                            and MUTABLE_TYPE.covers(stmt.value)
                         ):
                             violations.extend(
                                 violation(

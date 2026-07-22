@@ -2,6 +2,7 @@
 
 import ast
 from collections.abc import Iterator
+from types import NoneType
 from typing import final
 
 from .base import ErrorCodes, Instance, Source, Violations, violation
@@ -9,6 +10,7 @@ from .base import ErrorCodes, Instance, Source, Violations, violation
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ARG = Instance(ast.arg)
 CONSTANT = Instance(ast.Constant)
+NOTHING = Instance(NoneType)
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
     ast.FunctionDef,
     ast.AsyncFunctionDef,
@@ -30,7 +32,7 @@ class NoNull:
         node = source.node
         if FUNCTION.covers(node):
             return self._check_implicit_returns(node)
-        if CONSTANT.covers(node) and node.value is None:
+        if CONSTANT.covers(node) and NOTHING.covers(node.value):
             # Skip None in type annotations
             if self._is_in_type_annotation(node, source.tree):
                 return []
@@ -47,7 +49,7 @@ class NoNull:
 
         violations: Violations = []
         for each in returns:
-            if each.value is None:
+            if NOTHING.covers(each.value):
                 violations.extend(violation(each, ErrorCodes.EO005))
         return violations
 
