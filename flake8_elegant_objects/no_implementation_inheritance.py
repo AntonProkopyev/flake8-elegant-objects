@@ -15,11 +15,33 @@ class NoImplementationInheritance:
         node = source.node
 
         if isinstance(node, ast.ClassDef):
-            return self._check_implementation_inheritance(node)
+            return self._check_implementation_inheritance(node, source.tree)
 
         return []
 
-    def _check_implementation_inheritance(self, node: ast.ClassDef) -> Violations:
+    def _is_contract_in_tree(self, name: str, tree: ast.AST | None) -> bool:
+        """Check if a base class is a contract declared in this file."""
+        if not tree:
+            return False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == name:
+                return any(
+                    self._base_name(base) in {"ABC", "ABCMeta", "Protocol"}
+                    for base in node.bases
+                )
+        return False
+
+    def _base_name(self, base: ast.expr) -> str:
+        """Resolve the trailing name of a base class expression."""
+        if isinstance(base, ast.Name):
+            return base.id
+        if isinstance(base, ast.Attribute):
+            return base.attr
+        return ""
+
+    def _check_implementation_inheritance(
+        self, node: ast.ClassDef, tree: ast.AST | None
+    ) -> Violations:
         """Check for implementation inheritance violations."""
         for base in node.bases:
             is_abstract_base = False
@@ -69,6 +91,12 @@ class NoImplementationInheritance:
                     "Protocol",
                 }:
                     is_abstract_base = True
+
+            # A contract declared in this same file is subtyping, not inheritance
+            if not is_abstract_base:
+                is_abstract_base = self._is_contract_in_tree(
+                    self._base_name(base), tree
+                )
 
             # If not an abstract base, it's implementation inheritance
             if not is_abstract_base:

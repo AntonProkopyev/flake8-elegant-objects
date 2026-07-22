@@ -10,8 +10,8 @@ from ..base import ErrorCodes, Violations, violation
 class MutablePatterns:
     """Collection of specific mutable pattern detectors."""
 
-    @staticmethod
     def detect_aliasing_violations(
+        self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
         """Detect aliasing that can lead to external mutation."""
@@ -51,18 +51,18 @@ class MutablePatterns:
 
         return violations
 
-    @staticmethod
     def detect_defensive_copy_missing(
+        self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
         """Detect missing defensive copies in constructors."""
         if node.name != "__init__":
             return []
 
-        return MutablePatterns._check_init_defensive_copies(node)
+        return self._check_init_defensive_copies(node)
 
-    @staticmethod
     def _check_init_defensive_copies(
+        self,
         init_node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
         """Check __init__ method for missing defensive copies."""
@@ -72,21 +72,20 @@ class MutablePatterns:
         for stmt in ast.walk(init_node):
             if isinstance(stmt, ast.Assign):
                 violations.extend(
-                    MutablePatterns._check_assignment_defensive_copy(stmt, param_names)
+                    self._check_assignment_defensive_copy(stmt, param_names)
                 )
 
         return violations
 
-    @staticmethod
     def _check_assignment_defensive_copy(
-        stmt: ast.Assign, param_names: list[str]
+        self, stmt: ast.Assign, param_names: list[str]
     ) -> Violations:
         """Check assignment for missing defensive copy."""
         violations = []
 
         for target in stmt.targets:
-            if MutablePatterns._is_self_attribute(target):
-                if MutablePatterns._is_param_assignment(stmt.value, param_names):
+            if self._is_self_attribute(target):
+                if self._is_param_assignment(stmt.value, param_names):
                     assert isinstance(stmt.value, ast.Name)  # Type narrowing for mypy
                     violations.extend(
                         violation(
@@ -99,8 +98,7 @@ class MutablePatterns:
 
         return violations
 
-    @staticmethod
-    def _is_self_attribute(target: ast.expr) -> bool:
+    def _is_self_attribute(self, target: ast.expr) -> bool:
         """Check if target is a self attribute."""
         return (
             isinstance(target, ast.Attribute)
@@ -108,8 +106,7 @@ class MutablePatterns:
             and target.value.id == "self"
         )
 
-    @staticmethod
-    def _is_param_assignment(value: ast.expr, param_names: list[str]) -> bool:
+    def _is_param_assignment(self, value: ast.expr, param_names: list[str]) -> bool:
         """Check if value is a parameter assignment."""
         # Only flag if it's a direct parameter assignment AND likely mutable
         if isinstance(value, ast.Name) and value.id in param_names:

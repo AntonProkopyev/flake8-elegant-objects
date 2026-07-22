@@ -3,11 +3,11 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Principle, Source, Violations, is_method, violation
+from .base import ErrorCodes, Source, Violations, is_method, violation
 
 
 @final
-class NoPublicMethodsWithoutContracts(Principle):
+class NoPublicMethodsWithoutContracts:
     """Check that public methods are defined by contracts (Protocol/ABC)."""
 
     def check(self, source: Source) -> Violations:

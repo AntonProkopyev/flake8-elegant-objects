@@ -39,19 +39,17 @@ class CopyOnWrite:
 
         return violations
 
-    @staticmethod
     def _returns_new_instance(
-        func: ast.FunctionDef | ast.AsyncFunctionDef, class_name: str
+        self, func: ast.FunctionDef | ast.AsyncFunctionDef, class_name: str
     ) -> bool:
         """Check if function returns a new instance."""
         for node in ast.walk(func):
             if isinstance(node, ast.Return) and node.value:
-                if CopyOnWrite._is_class_constructor_call(node.value, class_name):
+                if self._is_class_constructor_call(node.value, class_name):
                     return True
         return False
 
-    @staticmethod
-    def _is_class_constructor_call(call_node: ast.expr, class_name: str) -> bool:
+    def _is_class_constructor_call(self, call_node: ast.expr, class_name: str) -> bool:
         """Check if call is a constructor for the given class."""
         return (
             isinstance(call_node, ast.Call)

@@ -32,8 +32,8 @@ class NoMutableObjects:
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)
             )
-            violations.extend(MutablePatterns.detect_aliasing_violations(node))
-            violations.extend(MutablePatterns.detect_defensive_copy_missing(node))
+            violations.extend(MutablePatterns().detect_aliasing_violations(node))
+            violations.extend(MutablePatterns().detect_defensive_copy_missing(node))
             if source.current_class:
                 violations.extend(
                     self.copy_on_write_checker.check_copy_on_write(
