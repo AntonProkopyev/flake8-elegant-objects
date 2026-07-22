@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flake8-elegant-objects"
-version = "2.0.0"
+version = "2.0.1"
 description = "Flake8 plugin enforcing Elegant Objects principles: no -er naming, no null, no getters/setters, immutable objects"
 readme = "README.md"
 license = { text = "MIT" }
