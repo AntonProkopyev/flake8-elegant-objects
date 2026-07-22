@@ -18,12 +18,14 @@ Detects violations of [Elegant Objects principles](https://www.elegantobjects.or
 - `EO003`: Variable name violates -er principle
 - `EO004`: Function name violates -er principle
 
+Verb names are not violations: a method is either a noun (builder) or a verb (manipulator). Only -er nouns are reported.
+
 ### Object Behavior (EO005-EO007)
 - `EO005`: Null (None) usage violates EO principle
 - `EO006`: Code in constructor violates EO principle
 - `EO007`: Getter/setter method violates EO principle
 
-### Mutable Object Violations (EO008, EO015-EO027)
+### Mutable Object Violations (EO008, EO015-EO021, EO023, EO025-EO027)
 - `EO008`: Mutable dataclass violation
 - `EO015`: Mutable class attribute violation
 - `EO016`: Mutable instance attribute violation
@@ -32,15 +34,13 @@ Detects violations of [Elegant Objects principles](https://www.elegantobjects.or
 - `EO019`: Mutating method call violation
 - `EO020`: Subscript assignment mutation violation
 - `EO021`: Chained mutation violation
-- `EO022`: Missing factory methods violation
 - `EO023`: Mutable default argument violation
-- `EO024`: Missing immutability enforcement violation
 - `EO025`: Copy-on-write violation
 - `EO026`: Aliasing violation (exposing mutable state)
 - `EO027`: Defensive copy violation
 
 ### Design and Architecture (EO009-EO014)
-- `EO009`: Static method violates EO principle (no static methods allowed)
+- `EO009`: Static or class method violates EO principle
 - `EO010`: isinstance/type casting violates EO principle (avoid type discrimination)
 - `EO011`: Public method without contract (Protocol/ABC) violates EO principle
 - `EO012`: Test method contains non-assertThat statements (only assertThat allowed)
@@ -79,7 +79,7 @@ Based on [Yegor Bugayenko](https://www.yegor256.com/)'s [Elegant Objects princip
 **Why?** Names ending in "-er" describe what objects _do_ rather than what they _are_, reducing them to mechanical task performers instead of equal partners in your design.
 
 - ❌ `class DataProcessor` → ✅ `class ProcessedData`
-- ❌ `def analyze()` → ✅ `def analysis()`
+- ❌ `def parser()` → ✅ `def parsed()`
 - ❌ `parser = ArgumentParser()` → ✅ `arguments = ArgumentParser()`
 
 ### 2. No Null/None (EO005)
@@ -122,7 +122,6 @@ Based on [Yegor Bugayenko](https://www.yegor256.com/)'s [Elegant Objects princip
 - ❌ `def items=[]:` (mutable defaults) → ✅ `def items=None:` + null object *(EO023)*
 - ❌ `return self._items` (exposing mutable state) → ✅ `return tuple(self._items)` *(EO026)*
 - ❌ `self.items = items` (no defensive copy) → ✅ `self.items = tuple(items)` *(EO027)*
-- ❌ Class with mutable state but no factory methods → ✅ Provide immutable factory methods *(EO022)*
 
 ### 6. No Static Methods (EO009)
 
@@ -217,14 +216,12 @@ flake8_elegant_objects/
 ├── no_public_methods_without_contracts.py  # EO011: Methods need contracts
 ├── no_static.py            # EO009: No static methods
 ├── no_type_discrimination.py  # EO010: No isinstance/type casting
-└── no_mutable_objects/     # EO008, EO015-EO027: Comprehensive mutability detection
+└── no_mutable_objects/     # EO008, EO015-EO027: Mutability detection
     ├── __init__.py         # Package initialization
     ├── base.py             # Shared utilities and state tracking
     ├── core.py             # Main orchestrator for all mutable object checks
-    ├── contract_checker.py # EO024: Immutability contract enforcement
     ├── copy_on_write_checker.py  # EO025: Copy-on-write pattern validation
     ├── deep_checker.py     # Cross-class mutation analysis
-    ├── factory_checker.py  # EO022: Factory method pattern validation
     ├── pattern_detectors.py # EO026-EO027: Aliasing and defensive copy detection
     └── shared_state_checker.py  # EO023: Shared mutable state detection
 ```

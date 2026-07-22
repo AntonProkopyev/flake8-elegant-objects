@@ -47,40 +47,52 @@ class Helper:
     def test_procedural_function_name_violation(self) -> None:
         """Test detection of procedural function names."""
         code = """
-def analyze_data():
+def parser():
     pass
 
-def process_information():
+def request_handler():
     pass
 
-def handle_request():
+def validator():
     pass
 """
         violations = self._check_code(code)
         assert len(violations) == 3
-        assert any("analyze_data" in v and "EO004" in v for v in violations)
-        assert any("process_information" in v and "EO004" in v for v in violations)
-        assert any("handle_request" in v and "EO004" in v for v in violations)
+        assert any("parser" in v and "EO004" in v for v in violations)
+        assert any("request_handler" in v and "EO004" in v for v in violations)
+        assert any("validator" in v and "EO004" in v for v in violations)
 
-    def test_procedural_method_name_violation(self) -> None:
-        """Test detection of procedural method names."""
+    def test_er_method_name_violation(self) -> None:
+        """Test detection of -er method names."""
         code = """
-class DataHandler:
-    def process_data(self):
+class Text:
+    def parser(self):
         pass
 
-    def analyze_results(self):
-        pass
-
-    def get_data(self):
+    def formatter(self):
         pass
 """
         violations = self._check_code(code)
         method_violations = [v for v in violations if "EO002" in v]
-        assert len(method_violations) == 3
-        assert any("process_data" in v for v in method_violations)
-        assert any("analyze_results" in v for v in method_violations)
-        assert any("get_data" in v for v in method_violations)
+        assert len(method_violations) == 2
+        assert any("parser" in v for v in method_violations)
+        assert any("formatter" in v for v in method_violations)
+
+    def test_verb_method_names_are_valid(self) -> None:
+        """Test that verbs are allowed, since methods are nouns or verbs."""
+        code = """
+class Text:
+    def print(self):
+        pass
+
+    def save(self):
+        pass
+
+    def analyze(self):
+        pass
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
 
     def test_procedural_variable_name_violation(self) -> None:
         """Test detection of procedural variable names."""
@@ -137,21 +149,21 @@ class RequestHandler:
         assert any("DataProcessor" in v and "EO001" in v for v in violations)
         assert any("RequestHandler" in v and "EO001" in v for v in violations)
 
-    def test_camel_case_procedural_names(self) -> None:
-        """Test detection of camelCase procedural names."""
+    def test_camel_case_er_names(self) -> None:
+        """Test detection of camelCase -er names."""
         code = """
-def analyzeData():
+def dataParser():
     pass
 
-def processInformation():
+def requestHandler():
     pass
 
 class DataProcessor:
-    def handleRequest(self):
+    def textFormatter(self):
         pass
 """
         violations = self._check_code(code)
         assert len(violations) >= 3
-        assert any("analyzeData" in v and "EO004" in v for v in violations)
-        assert any("processInformation" in v and "EO004" in v for v in violations)
-        assert any("handleRequest" in v and "EO002" in v for v in violations)
+        assert any("dataParser" in v and "EO004" in v for v in violations)
+        assert any("requestHandler" in v and "EO004" in v for v in violations)
+        assert any("textFormatter" in v and "EO002" in v for v in violations)

@@ -22,6 +22,11 @@ class NoGettersSetters:
         if not is_method(node) or node.name.startswith("_"):
             return []
 
+        # Property setters are setters, whatever the method is called
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Attribute) and decorator.attr == "setter":
+                return violation(node, ErrorCodes.EO007.format(name=node.name))
+
         # Skip methods with @property decorator
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Name) and decorator.id == "property":

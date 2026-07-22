@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- `EO022` (missing factory methods) and `EO024` (missing immutability enforcement).
+  Both prescribed a technique rather than forbidding one, neither appears in the
+  Elegant Objects principles, and both duplicated `EO016` on the same line.
+- Procedural verb detection in `EO002`/`EO003`/`EO004`. Methods are nouns or verbs
+  separated into queries and commands, so verb names are not violations. These codes
+  now report -er names only, as `EO001` always did.
+
+### Fixed
+
+- The `flake8-elegant-objects` console script raised `ImportError`: it pointed at
+  `flake8_elegant_objects:main`, while `main` lives in `__main__.py`.
+- `EO006` no longer reports a constructor docstring as code.
+- `EO005` now reports a bare `return` in a function that returns values elsewhere.
+- `EO009` now detects decorators reached through a module, such as
+  `@abc.abstractstaticmethod`.
+- `EO010` now detects `typing.cast`, `builtins.isinstance`, `issubclass`,
+  `match`/`case` class patterns, and reflection through `__class__`, `__bases__`,
+  `__mro__` and `__subclasses__`.
+- `EO007` now detects `@x.setter` methods, which are setters regardless of name.
+
+### Added
+
+- Tests for the standalone CLI and for plugin registration through flake8 itself,
+  neither of which was covered before.
+- `flake8` as a development dependency.
+
 ## [1.1.1] - 2024-06-30
 
 ### Minor release

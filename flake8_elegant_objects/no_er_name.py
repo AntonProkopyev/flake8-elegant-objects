@@ -1,7 +1,6 @@
 """Naming violations checker for Elegant Objects principles."""
 
 import ast
-import re
 from typing import ClassVar
 
 from .base import ErrorCodes, Source, Violations, is_method, violation
@@ -83,90 +82,6 @@ class NoErName:
         "writer",
     }
 
-    # Common procedural verbs that should be nouns
-    PROCEDURAL_VERBS: ClassVar[set[str]] = {
-        "accumulate",
-        "add",
-        "aggregate",
-        "analyze",
-        "append",
-        "build",
-        "calculate",
-        "change",
-        "check",
-        "clean",
-        "clear",
-        "close",
-        "collect",
-        "compile",
-        "compress",
-        "control",
-        "convert",
-        "create",
-        "decode",
-        "decompress",
-        "delete",
-        "deserialize",
-        "dispatch",
-        "display",
-        "do",
-        "encode",
-        "evaluate",
-        "execute",
-        "export",
-        "fetch",
-        "filter",
-        "find",
-        "format",
-        "generate",
-        "get",
-        "handle",
-        "hide",
-        "import",
-        "insert",
-        "interpret",
-        "join",
-        "load",
-        "manage",
-        "merge",
-        "modify",
-        "open",
-        "organize",
-        "parse",
-        "pause",
-        "prepend",
-        "print",
-        "process",
-        "put",
-        "read",
-        "receive",
-        "refresh",
-        "remove",
-        "render",
-        "reset",
-        "resume",
-        "retrieve",
-        "route",
-        "run",
-        "save",
-        "schedule",
-        "search",
-        "send",
-        "serialize",
-        "set",
-        "show",
-        "sort",
-        "split",
-        "start",
-        "stop",
-        "store",
-        "transform",
-        "transmit",
-        "update",
-        "validate",
-        "write",
-    }
-
     # Allowed exceptions (common patterns that are OK)
     ALLOWED_EXCEPTIONS: ClassVar[set[str]] = {
         "buffer",
@@ -218,10 +133,6 @@ class NoErName:
             if name.endswith(suffix):
                 return violation(node, ErrorCodes.EO001.format(name=node.name))
 
-        # Check for procedural patterns in compound names
-        if self._contains_procedural_pattern(name):
-            return violation(node, ErrorCodes.EO001.format(name=node.name))
-
         return []
 
     def _check_function_name(
@@ -232,15 +143,17 @@ class NoErName:
         if node.name.startswith("_"):
             return []
 
-        # Skip common property patterns
-        if node.name in {"property", "getter", "setter"}:
+        name = node.name.lower()
+
+        # Skip if it's an allowed exception
+        if name in self.ALLOWED_EXCEPTIONS:
             return []
 
-        # Check for procedural verbs
-        if self._starts_with_procedural_verb(node.name):
-            # Determine if it's a method or standalone function
-            error_code = ErrorCodes.EO002 if is_method(node) else ErrorCodes.EO004
-            return violation(node, error_code.format(name=node.name))
+        # Check for -er suffixes; verbs are legitimate method names
+        for suffix in self.ER_SUFFIXES:
+            if name.endswith(suffix):
+                error_code = ErrorCodes.EO002 if is_method(node) else ErrorCodes.EO004
+                return violation(node, error_code.format(name=node.name))
 
         return []
 
@@ -275,32 +188,4 @@ class NoErName:
             if name.endswith(suffix):
                 return violation(node, ErrorCodes.EO003.format(name=node.id))
 
-        # Check for procedural verbs as variable names
-        if self._starts_with_procedural_verb(name):
-            return violation(node, ErrorCodes.EO003.format(name=node.id))
-
         return []
-
-    def _contains_procedural_pattern(self, name: str) -> bool:
-        """Check if name contains procedural patterns."""
-        # Split camelCase/snake_case into words
-        words = re.findall(r"[a-z]+", name)
-
-        # Check if any word is a procedural verb
-        return any(word in self.PROCEDURAL_VERBS for word in words)
-
-    def _starts_with_procedural_verb(self, name: str) -> bool:
-        """Check if name starts with a procedural verb."""
-        # Split camelCase/snake_case and check first word
-        # First split on underscores, then on camelCase boundaries
-        words: list[str] = []
-        for part in name.split("_"):
-            # Split camelCase: insert space before uppercase letters
-            camel_split = re.sub(r"([a-z])([A-Z])", r"\1 \2", part)
-            words.extend(word.lower() for word in camel_split.split() if word)
-
-        if not words:
-            return False
-
-        first_word = words[0]
-        return first_word in self.PROCEDURAL_VERBS

@@ -25,28 +25,37 @@ class NoConstructorCode:
         violations = []
         # Constructors should only contain assignments to self.attribute = parameter
         for stmt in node.body:
-            if isinstance(stmt, ast.Assign):
-                # Check if it's a simple self.attr = param assignment
-                if len(stmt.targets) == 1 and isinstance(
-                    stmt.targets[0], ast.Attribute
-                ):
-                    target = stmt.targets[0]
-                    if isinstance(target.value, ast.Name) and target.value.id == "self":
-                        # This is a self.attr assignment, check if value is a simple name
-                        if not isinstance(stmt.value, ast.Name):
-                            violations.extend(violation(stmt, ErrorCodes.EO006))
-                    else:
-                        violations.extend(violation(stmt, ErrorCodes.EO006))
-                else:
-                    violations.extend(violation(stmt, ErrorCodes.EO006))
-            elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
-                if self._is_super_call(stmt.value):
-                    continue
-                violations.extend(violation(stmt, ErrorCodes.EO006))
-            elif not isinstance(stmt, ast.Pass):  # Allow pass statements
+            if not self._is_assembly(stmt):
                 violations.extend(violation(stmt, ErrorCodes.EO006))
 
         return violations
+
+    def _is_assembly(self, stmt: ast.stmt) -> bool:
+        """Check if a constructor statement merely assembles the object."""
+        if isinstance(stmt, ast.Pass) or self._is_docstring(stmt):
+            return True
+        if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+            return self._is_super_call(stmt.value)
+        if isinstance(stmt, ast.Assign):
+            return self._is_parameter_assignment(stmt)
+        return False
+
+    def _is_parameter_assignment(self, stmt: ast.Assign) -> bool:
+        """Check if an assignment binds a parameter to a single self attribute."""
+        if len(stmt.targets) != 1 or not isinstance(stmt.targets[0], ast.Attribute):
+            return False
+        target = stmt.targets[0]
+        if not isinstance(target.value, ast.Name) or target.value.id != "self":
+            return False
+        return isinstance(stmt.value, ast.Name)
+
+    def _is_docstring(self, stmt: ast.stmt) -> bool:
+        """Check if a statement is a docstring rather than executable code."""
+        return (
+            isinstance(stmt, ast.Expr)
+            and isinstance(stmt.value, ast.Constant)
+            and isinstance(stmt.value.value, str)
+        )
 
     def _is_super_call(self, call: ast.Call) -> bool:
         """Check if a call is a super() call."""

@@ -184,3 +184,19 @@ class DataProcessor:
         assert len(getter_setter_violations) == 2
         assert any("get_data" in v for v in getter_setter_violations)
         assert any("set_config" in v for v in getter_setter_violations)
+
+    def test_property_setter_violation(self) -> None:
+        """Test detection of setters written as property setters."""
+        code = """
+class User:
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO007" in violations[0]

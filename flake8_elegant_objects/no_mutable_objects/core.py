@@ -4,10 +4,8 @@ import ast
 
 from ..base import ErrorCodes, Source, Violations, violation
 from .base import is_mutable_type
-from .contract_checker import ImmutabilityContractChecker
 from .copy_on_write_checker import CopyOnWriteChecker
 from .deep_checker import DeepMutabilityChecker
-from .factory_checker import FactoryMethodChecker
 from .pattern_detectors import MutablePatternDetectors
 from .shared_state_checker import SharedMutableStateChecker
 
@@ -17,9 +15,7 @@ class NoMutableObjects:
 
     def __init__(self) -> None:
         self.deep_checker = DeepMutabilityChecker()
-        self.factory_checker = FactoryMethodChecker()
         self.shared_state_checker = SharedMutableStateChecker()
-        self.contract_checker = ImmutabilityContractChecker()
         self.copy_on_write_checker = CopyOnWriteChecker()
 
     def check(self, source: Source) -> Violations:
@@ -29,9 +25,7 @@ class NoMutableObjects:
 
         if isinstance(node, ast.ClassDef):
             violations.extend(self._check_mutable_class(node))
-            violations.extend(self.factory_checker.check_factory_pattern(node))
             violations.extend(self.shared_state_checker.check_shared_state(node))
-            violations.extend(self.contract_checker.check_immutability_contract(node))
         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             violations.extend(
                 self._check_mutable_assignments(node, source.current_class)

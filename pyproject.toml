@@ -48,10 +48,11 @@ Documentation = "https://github.com/AntonProkopyev/flake8-elegant-objects#readme
 EO = "flake8_elegant_objects:ElegantObjectsPlugin"
 
 [project.scripts]
-flake8-elegant-objects = "flake8_elegant_objects:main"
+flake8-elegant-objects = "flake8_elegant_objects.__main__:main"
 
 [dependency-groups]
 dev = [
+    "flake8>=7.0.0",
     "mypy>=1.16.1",
     "pytest>=8.4.1",
     "ruff>=0.12.0",
@@ -77,7 +78,7 @@ python_functions = ["test_*"]
 [tool.coverage.run]
 branch = true
 source = ["flake8_elegant_objects"]
-omit = ["*/tests/*", "*/test_*", "*/__main__.py"]
+omit = ["*/tests/*", "*/test_*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -153,7 +154,7 @@ force-sort-within-sections = true
 single-line-exclusions = ["typing"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG", "S101", "PLR2004", "PLR0904"]
+"tests/*" = ["ARG", "S101", "PLR2004", "PLR0904", "PLC2701", "S603", "S607"]
 "flake8_elegant_objects/__init__.py" = [
     "PLR0904",
 ] # too many public methods (AST visitor)

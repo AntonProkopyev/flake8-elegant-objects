@@ -42,6 +42,20 @@ class Test:
         static_violations = [v for v in violations if "EO009" in v]
         assert len(static_violations) == 2
 
+    def test_dotted_staticmethod_decorator_violation(self) -> None:
+        """Test detection of static decorators referenced through a module."""
+        code = """
+import abc
+
+class Example:
+    @abc.abstractstaticmethod
+    def create():
+        pass
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO009" in violations[0]
+
     def test_regular_methods_valid(self) -> None:
         """Test that regular methods are valid."""
         code = """

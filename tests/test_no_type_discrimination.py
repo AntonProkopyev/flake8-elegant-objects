@@ -57,6 +57,44 @@ def get_type(obj):
         assert len(violations) == 1
         assert "EO010" in violations[0]
 
+    def test_dotted_calls_violation(self) -> None:
+        """Test detection of casting and introspection reached through a module."""
+        code = """
+import builtins
+import typing
+
+def check(value):
+    typing.cast(int, value)
+    return builtins.isinstance(value, int)
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 2
+        assert all("EO010" in v for v in violations)
+
+    def test_class_attribute_violation(self) -> None:
+        """Test detection of type introspection via __class__."""
+        code = """
+def check(value):
+    return value.__class__ is int
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 1
+        assert "EO010" in violations[0]
+
+    def test_match_class_pattern_violation(self) -> None:
+        """Test detection of type discrimination through match statements."""
+        code = """
+def check(value):
+    match value:
+        case int():
+            return 1
+        case str():
+            return 2
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 2
+        assert all("EO010" in v for v in violations)
+
     def test_valid_code(self) -> None:
         """Test that code without type discrimination is valid."""
         code = """

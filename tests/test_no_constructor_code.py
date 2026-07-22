@@ -192,3 +192,14 @@ class Child(Parent):
         violations = self._check_code(code)
         assert len(violations) == 2
         assert all("EO006" in v for v in violations)
+
+    def test_docstring_is_not_code(self) -> None:
+        """Test that a constructor docstring is not reported as code."""
+        code = '''
+class Point:
+    def __init__(self, x):
+        """Assembles a point."""
+        self.x = x
+'''
+        violations = self._check_code(code)
+        assert len(violations) == 0
