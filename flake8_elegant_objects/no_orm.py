@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO013, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 CALL = Instance(ast.Call)
@@ -71,7 +71,7 @@ class NoOrm(Principle):
         if self._is_allowed_method_usage(node.func.value):
             return []
 
-        return violation(node, ErrorCodes.EO013.format(name=node.func.attr))
+        return REPORT.of(node, EO013.format(name=node.func.attr))
 
     def _is_allowed_method_usage(self, value: ast.AST) -> bool:
         """Check if the method usage is allowed (not ORM)."""

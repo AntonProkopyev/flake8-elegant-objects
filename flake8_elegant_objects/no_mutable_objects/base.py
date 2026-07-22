@@ -23,7 +23,7 @@ MUTABLE_COMPREHENSION: Instance[ast.ListComp | ast.DictComp | ast.SetComp] = Ins
 class MutableType:
     """A syntax node, asked whether it builds a mutable value."""
 
-    def covers(self, node: ast.AST) -> bool:
+    def covers(self, node: ast.AST) -> bool:  # noqa: EO011
         """Answer whether the node represents a mutable type."""
         if MUTABLE_LITERAL.covers(node):
             return True

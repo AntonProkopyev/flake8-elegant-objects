@@ -4,13 +4,19 @@ import ast
 from typing import final
 
 from ..base import (
-    ErrorCodes,
+    EO008,
+    EO015,
+    EO016,
+    EO017,
+    EO018,
+    EO019,
+    EO020,
+    REPORT,
     Instance,
     Parents,
     Principle,
     Source,
     Violations,
-    violation,
 )
 from .base import MUTABLE_TYPE
 from .copy_on_write_checker import CopyOnWrite
@@ -97,9 +103,7 @@ class NoMutableObjects(Principle):
         )
 
         if has_dataclass and not has_frozen:
-            return violation(
-                node, ErrorCodes.EO008.format(name=f"@dataclass class {node.name}")
-            )
+            return REPORT.of(node, EO008.format(name=f"@dataclass class {node.name}"))
         return []
 
     def _analyze_dataclass_decorators(
@@ -150,9 +154,9 @@ class NoMutableObjects(Principle):
         for target in stmt.targets:
             if NAME.covers(target) and MUTABLE_TYPE.covers(stmt.value):
                 violations.extend(
-                    violation(
+                    REPORT.of(
                         stmt,
-                        ErrorCodes.EO015.format(name=f"class attribute '{target.id}'"),
+                        EO015.format(name=f"class attribute '{target.id}'"),
                     )
                 )
 
@@ -180,9 +184,9 @@ class NoMutableObjects(Principle):
                             and MUTABLE_TYPE.covers(stmt.value)
                         ):
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     stmt,
-                                    ErrorCodes.EO016.format(
+                                    EO016.format(
                                         name=f"instance attribute 'self.{target.attr}'"
                                     ),
                                 )
@@ -213,9 +217,9 @@ class NoMutableObjects(Principle):
                     if FUNCTION.covers(parent):
                         if parent.name != "__init__":
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     node,
-                                    ErrorCodes.EO017.format(
+                                    EO017.format(
                                         name=f"mutation of 'self.{target.attr}'"
                                     ),
                                 )
@@ -241,9 +245,9 @@ class NoMutableObjects(Principle):
             and node.target.value.id == "self"
         ):
             violations.extend(
-                violation(
+                REPORT.of(
                     node,
-                    ErrorCodes.EO018.format(
+                    EO018.format(
                         name=f"augmented assignment to 'self.{node.target.attr}'"
                     ),
                 )
@@ -284,9 +288,9 @@ class NoMutableObjects(Principle):
             and node.func.value.value.id == "self"
         ):
             violations.extend(
-                violation(
+                REPORT.of(
                     node,
-                    ErrorCodes.EO019.format(
+                    EO019.format(
                         name=f"call to mutating method 'self.{node.func.value.attr}.{node.func.attr}()'"
                     ),
                 )
@@ -314,9 +318,9 @@ class NoMutableObjects(Principle):
                 and node.value.value.id == "self"
             ):
                 violations.extend(
-                    violation(
+                    REPORT.of(
                         parent,
-                        ErrorCodes.EO020.format(
+                        EO020.format(
                             name=f"subscript assignment to 'self.{node.value.attr}[...]'"
                         ),
                     )

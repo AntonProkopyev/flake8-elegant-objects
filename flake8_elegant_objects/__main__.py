@@ -8,7 +8,7 @@ from .base import ElegantObjectsCore
 from .noqa import Noqa
 
 
-def main() -> None:
+def main() -> None:  # noqa: EO009
     """Standalone command-line interface."""
     arguments = argparse.ArgumentParser(
         description="Check Python files for Elegant Objects violations"

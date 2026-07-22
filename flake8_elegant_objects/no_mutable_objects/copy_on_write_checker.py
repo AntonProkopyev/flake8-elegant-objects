@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Instance, Violations, violation
+from ..base import EO025, REPORT, Instance, Violations
 
 ASSIGN = Instance(ast.Assign)
 ATTRIBUTE = Instance(ast.Attribute)
@@ -16,7 +16,7 @@ RETURN = Instance(ast.Return)
 class CopyOnWrite:
     """Checks for proper copy-on-write patterns for immutability."""
 
-    def check_copy_on_write(
+    def check_copy_on_write(  # noqa: EO011
         self, node: ast.FunctionDef | ast.AsyncFunctionDef, class_name: str
     ) -> Violations:
         """Check if mutations properly implement copy-on-write."""
@@ -35,9 +35,9 @@ class CopyOnWrite:
                     ):
                         if not self._returns_new_instance(node, class_name):
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     stmt,
-                                    ErrorCodes.EO025.format(
+                                    EO025.format(
                                         name=f"mutation in {node.name} without returning new instance"
                                     ),
                                 )

@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Instance, Violations, violation
+from ..base import EO026, EO027, REPORT, Instance, Violations
 
 ASSIGN = Instance(ast.Assign)
 ATTRIBUTE = Instance(ast.Attribute)
@@ -15,7 +15,7 @@ RETURN = Instance(ast.Return)
 class MutablePatterns:
     """Collection of specific mutable pattern detectors."""
 
-    def detect_aliasing_violations(
+    def detect_aliasing_violations(  # noqa: EO011
         self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
@@ -46,9 +46,9 @@ class MutablePatterns:
                         }
                         if any(pattern in lowered for pattern in mutable_attr_patterns):
                             violations.extend(
-                                violation(
+                                REPORT.of(
                                     stmt,
-                                    ErrorCodes.EO026.format(
+                                    EO026.format(
                                         name=f"returning internal mutable state 'self.{stmt.value.attr}'"
                                     ),
                                 )
@@ -56,7 +56,7 @@ class MutablePatterns:
 
         return violations
 
-    def detect_defensive_copy_missing(
+    def detect_defensive_copy_missing(  # noqa: EO011
         self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
@@ -93,9 +93,9 @@ class MutablePatterns:
                 if self._is_param_assignment(stmt.value, param_names):
                     assert NAME.covers(stmt.value)  # Type narrowing for mypy
                     violations.extend(
-                        violation(
+                        REPORT.of(
                             stmt,
-                            ErrorCodes.EO027.format(
+                            EO027.format(
                                 name=f"possible mutable parameter '{stmt.value.id}' assigned without defensive copy"
                             ),
                         )

@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from types import NoneType
 from typing import final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO005, REPORT, Instance, Principle, Source, Violations
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ARG = Instance(ast.arg)
@@ -36,7 +36,7 @@ class NoNull(Principle):
             # Skip None in type annotations
             if self._is_in_type_annotation(node, source.tree):
                 return []
-            return violation(node, ErrorCodes.EO005)
+            return REPORT.of(node, EO005)
         return []
 
     def _check_implicit_returns(
@@ -50,7 +50,7 @@ class NoNull(Principle):
         violations: Violations = []
         for each in returns:
             if NOTHING.covers(each.value):
-                violations.extend(violation(each, ErrorCodes.EO005))
+                violations.extend(REPORT.of(each, EO005))
         return violations
 
     def _returns(

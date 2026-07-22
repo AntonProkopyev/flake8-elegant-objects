@@ -3,15 +3,7 @@
 import ast
 from typing import final
 
-from .base import (
-    ErrorCodes,
-    Instance,
-    Principle,
-    Source,
-    Violations,
-    is_method,
-    violation,
-)
+from .base import EO007, METHOD, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
@@ -37,19 +29,19 @@ class NoAccessMethods(Principle):
         self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> Violations:
         """Check for getter/setter methods."""
-        if not is_method(node) or node.name.startswith("_"):
+        if not METHOD.covers(node) or node.name.startswith("_"):
             return []
 
         # Property setters are setters, whatever the method is called
         for decorator in node.decorator_list:
             if ATTRIBUTE.covers(decorator) and decorator.attr == "setter":
-                return violation(node, ErrorCodes.EO007.format(name=node.name))
+                return REPORT.of(node, EO007.format(name=node.name))
 
         # Properties that only hand back an attribute are getters
         for decorator in node.decorator_list:
             if NAME.covers(decorator) and decorator.id == "property":
                 if self._returns_attribute(node):
-                    return violation(node, ErrorCodes.EO007.format(name=node.name))
+                    return REPORT.of(node, EO007.format(name=node.name))
                 return []
 
         return self._check_names(node)
@@ -81,7 +73,7 @@ class NoAccessMethods(Principle):
             )
             or name == "get"
         ):
-            return violation(node, ErrorCodes.EO007.format(name=node.name))
+            return REPORT.of(node, EO007.format(name=node.name))
 
         # Check for setter patterns
         if (
@@ -93,6 +85,6 @@ class NoAccessMethods(Principle):
             )
             or name == "set"
         ):
-            return violation(node, ErrorCodes.EO007.format(name=node.name))
+            return REPORT.of(node, EO007.format(name=node.name))
 
         return []

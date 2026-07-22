@@ -5,13 +5,16 @@ import re
 from typing import ClassVar, final
 
 from .base import (
-    ErrorCodes,
+    EO001,
+    EO002,
+    EO003,
+    EO004,
+    METHOD,
+    REPORT,
     Instance,
     Principle,
     Source,
     Violations,
-    is_method,
-    violation,
 )
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
@@ -159,7 +162,7 @@ class NoErName(Principle):
         # Check for -er suffixes (the hall of shame)
         for suffix in self.ER_SUFFIXES:
             if name.endswith(suffix):
-                return violation(node, ErrorCodes.EO001.format(name=node.name))
+                return REPORT.of(node, EO001.format(name=node.name))
 
         return []
 
@@ -180,8 +183,8 @@ class NoErName(Principle):
         # Check for -er suffixes; verbs are legitimate method names
         for suffix in self.ER_SUFFIXES:
             if name.endswith(suffix):
-                error_code = ErrorCodes.EO002 if is_method(node) else ErrorCodes.EO004
-                return violation(node, error_code.format(name=node.name))
+                error_code = EO002 if METHOD.covers(node) else EO004
+                return REPORT.of(node, error_code.format(name=node.name))
 
         return []
 
@@ -214,6 +217,6 @@ class NoErName(Principle):
         # Check for -er suffixes
         for suffix in self.ER_SUFFIXES:
             if name.endswith(suffix):
-                return violation(node, ErrorCodes.EO003.format(name=node.id))
+                return REPORT.of(node, EO003.format(name=node.id))
 
         return []

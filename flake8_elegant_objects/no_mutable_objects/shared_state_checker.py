@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Instance, Violations, violation
+from ..base import EO023, REPORT, Instance, Violations
 
 FUNCTION_DEF = Instance(ast.FunctionDef)
 MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
@@ -17,7 +17,7 @@ MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
 class SharedMutableState:
     """Detects shared mutable state violations."""
 
-    def check_shared_state(self, node: ast.ClassDef) -> Violations:
+    def check_shared_state(self, node: ast.ClassDef) -> Violations:  # noqa: EO011
         """Check for shared mutable state patterns."""
         violations = []
 
@@ -26,9 +26,9 @@ class SharedMutableState:
                 for default in item.args.defaults:
                     if self._is_mutable_default(default):
                         violations.extend(
-                            violation(
+                            REPORT.of(
                                 item,
-                                ErrorCodes.EO023.format(
+                                EO023.format(
                                     name=f"mutable default argument in {item.name}"
                                 ),
                             )

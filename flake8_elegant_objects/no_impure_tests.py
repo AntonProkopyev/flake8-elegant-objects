@@ -3,7 +3,16 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import (
+    EO012,
+    EO012_COUNT,
+    EO012_ORDER,
+    REPORT,
+    Instance,
+    Principle,
+    Source,
+    Violations,
+)
 
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
     ast.FunctionDef,
@@ -85,7 +94,7 @@ class NoImpureTests(Principle):
         if WITH.covers(stmt):
             return self._handle_with_statement(stmt, test_name)
 
-        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+        return REPORT.of(stmt, EO012.format(name=test_name)), False
 
     def _handle_expression_call(
         self, stmt: ast.Expr, test_name: str
@@ -93,7 +102,7 @@ class NoImpureTests(Principle):
         """Handle expression call statements."""
         if CALL.covers(stmt.value) and self._is_assertion_call(stmt.value):
             return [], True
-        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+        return REPORT.of(stmt, EO012.format(name=test_name)), False
 
     def _handle_with_statement(
         self, stmt: ast.With, test_name: str
@@ -101,7 +110,7 @@ class NoImpureTests(Principle):
         """Handle with statement for assertion context managers."""
         if self._is_assertion_context_manager(stmt):
             return [], True
-        return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
+        return REPORT.of(stmt, EO012.format(name=test_name)), False
 
     def _validate_assertions(
         self,
@@ -111,9 +120,9 @@ class NoImpureTests(Principle):
     ) -> Violations:
         """Validate that a test holds one assertion and closes with it."""
         if len(assertions) != 1:
-            return violation(node, ErrorCodes.EO012_COUNT.format(name=node.name))
+            return REPORT.of(node, EO012_COUNT.format(name=node.name))
         if assertions[0] != len(body) - 1:
-            return violation(node, ErrorCodes.EO012_ORDER.format(name=node.name))
+            return REPORT.of(node, EO012_ORDER.format(name=node.name))
         return []
 
     def _is_assertion_call(self, call: ast.Call) -> bool:

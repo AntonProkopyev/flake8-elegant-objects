@@ -21,7 +21,7 @@ class Noqa:
     def __init__(self, source: str) -> None:
         self._source = source
 
-    def allows(self, line: int, code: str) -> bool:
+    def allows(self, line: int, code: str) -> bool:  # noqa: EO011
         """Answer whether a violation of this code survives on this line."""
         lines = self._source.split("\n")
         if line < 1 or line > len(lines):

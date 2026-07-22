@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO014, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 CLASS_DEF = Instance(ast.ClassDef)
@@ -147,6 +147,6 @@ class NoImplementationInheritance(Principle):
             if self._is_opaque(base, tree):
                 continue
             # If not an abstract base, it's implementation inheritance
-            return violation(node, ErrorCodes.EO014.format(name=node.name))
+            return REPORT.of(node, EO014.format(name=node.name))
 
         return []

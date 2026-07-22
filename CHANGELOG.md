@@ -60,6 +60,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The plugin obeys every rule it enforces. What began as 300 violations against
+  its own source is 0, with 23 suppressions that each name a reason: entry point
+  signatures flake8 and pyproject dictate, one isinstance inside `Instance`, one
+  `None` for the absence of an enclosing class, `Generic` for TypeGuard narrowing,
+  and helper methods whose contracts would mean a Protocol apiece. A test fixes
+  that count, so a new suppression has to be taken deliberately.
+- Type discrimination lives in one object. `Instance(kind).covers(node)` replaced
+  148 direct `isinstance` calls across nineteen files; its answer is a `TypeGuard`,
+  so callers keep the narrowing they had.
+- Error messages moved from the `ErrorCodes` class to module constants, and the
+  parent of a node is a real map rather than an attribute stitched onto borrowed
+  ast objects.
+
 - CI installs the built wheel into a clean environment and runs the console
   script and `flake8 --select=EO` from it. Editable installs hide the fault
   that shipped in 1.1.1.

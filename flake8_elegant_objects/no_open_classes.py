@@ -8,7 +8,7 @@ stopped being one object.
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO028, EO029, REPORT, Instance, Principle, Source, Violations
 
 MAX_ATTRIBUTES = 4
 
@@ -46,7 +46,7 @@ class NoOpenClasses(Principle):
             return []
         if any(self._trailing_name(each) == "final" for each in node.decorator_list):
             return []
-        return violation(node, ErrorCodes.EO028.format(name=node.name))
+        return REPORT.of(node, EO028.format(name=node.name))
 
     def _check_attributes(self, node: ast.ClassDef) -> Violations:
         """Check that a class holds no more than four attributes."""
@@ -56,9 +56,9 @@ class NoOpenClasses(Principle):
         names = self._attributes(node)
         if len(names) <= MAX_ATTRIBUTES:
             return []
-        return violation(
+        return REPORT.of(
             node,
-            ErrorCodes.EO029.format(name=f"class {node.name} holds {len(names)}"),
+            EO029.format(name=f"class {node.name} holds {len(names)}"),
         )
 
     def _attributes(self, node: ast.ClassDef) -> set[str]:

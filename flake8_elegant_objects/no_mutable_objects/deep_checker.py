@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from ..base import CLASS_DEF, ErrorCodes, Instance, Violations, violation
+from ..base import CLASS_DEF, EO021, REPORT, Instance, Violations
 
 ASSIGN = Instance(ast.Assign)
 ATTRIBUTE = Instance(ast.Attribute)
@@ -21,7 +21,7 @@ MUTABLE_LITERAL: Instance[ast.List | ast.Dict | ast.Set] = Instance((
 class DeepMutability:
     """Enhanced checker for deep mutability patterns."""
 
-    def check_deep_mutations(self, tree: ast.AST) -> Violations:
+    def check_deep_mutations(self, tree: ast.AST) -> Violations:  # noqa: EO011
         """Check for deep mutation patterns across the entire tree."""
         return Mutation(tree).violations()
 
@@ -33,7 +33,7 @@ class Mutation:
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
 
-    def violations(self) -> Violations:
+    def violations(self) -> Violations:  # noqa: EO011
         """Find every chained mutation in the tree."""
         return self._scan(self.tree, False, "")
 
@@ -53,7 +53,7 @@ class Mutation:
         if not in_class or function == "__init__":
             return []
         if CALL.covers(node) and self._is_chained_mutation(node):
-            return violation(node, ErrorCodes.EO021.format(name="chained mutation"))
+            return REPORT.of(node, EO021.format(name="chained mutation"))
         return []
 
     def _is_chained_mutation(self, node: ast.Call) -> bool:

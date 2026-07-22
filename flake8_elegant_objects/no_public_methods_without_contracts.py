@@ -3,15 +3,7 @@
 import ast
 from typing import final
 
-from .base import (
-    ErrorCodes,
-    Instance,
-    Principle,
-    Source,
-    Violations,
-    is_method,
-    violation,
-)
+from .base import EO011, METHOD, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 CLASS_DEF = Instance(ast.ClassDef)
@@ -34,7 +26,7 @@ class NoPublicMethodsWithoutContracts(Principle):
         if not FUNCTION.covers(source.node):
             return violations
 
-        if not source.current_class or not is_method(source.node):
+        if not source.current_class or not METHOD.covers(source.node):
             return violations
 
         if source.node.name.startswith("_"):
@@ -51,13 +43,11 @@ class NoPublicMethodsWithoutContracts(Principle):
                 source.node.name, source.current_class, source.tree
             ):
                 violations.extend(
-                    violation(
-                        source.node, ErrorCodes.EO011.format(name=source.node.name)
-                    )
+                    REPORT.of(source.node, EO011.format(name=source.node.name))
                 )
         else:
             violations.extend(
-                violation(source.node, ErrorCodes.EO011.format(name=source.node.name))
+                REPORT.of(source.node, EO011.format(name=source.node.name))
             )
 
         return violations

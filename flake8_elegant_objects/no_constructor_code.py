@@ -3,15 +3,7 @@
 import ast
 from typing import final
 
-from .base import (
-    ErrorCodes,
-    Instance,
-    Principle,
-    Source,
-    Violations,
-    is_method,
-    violation,
-)
+from .base import EO006, METHOD, REPORT, Instance, Principle, Source, Violations
 
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
     ast.FunctionDef,
@@ -42,14 +34,14 @@ class NoConstructorCode(Principle):
         self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> Violations:
         """Check for code in constructors beyond parameter assignments."""
-        if node.name != "__init__" or not is_method(node):
+        if node.name != "__init__" or not METHOD.covers(node):
             return []
 
         violations = []
         # Constructors should only contain assignments to self.attribute = parameter
         for stmt in node.body:
             if not self._is_assembly(stmt):
-                violations.extend(violation(stmt, ErrorCodes.EO006))
+                violations.extend(REPORT.of(stmt, EO006))
 
         return violations
 

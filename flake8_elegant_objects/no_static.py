@@ -3,7 +3,7 @@
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO009, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
@@ -45,7 +45,7 @@ class NoStatic(Principle):
                 if statement.name.startswith("_"):
                     continue
                 violations.extend(
-                    violation(statement, ErrorCodes.EO009.format(name=statement.name))
+                    REPORT.of(statement, EO009.format(name=statement.name))
                 )
         return violations
 
@@ -56,7 +56,7 @@ class NoStatic(Principle):
         # Check for @staticmethod decorator, plain or reached through a module
         for decorator in node.decorator_list:
             if self._decorator_name(decorator) in self.STATIC_DECORATORS:
-                return violation(node, ErrorCodes.EO009.format(name=node.name))
+                return REPORT.of(node, EO009.format(name=node.name))
         return []
 
     def _decorator_name(self, decorator: ast.expr) -> str:

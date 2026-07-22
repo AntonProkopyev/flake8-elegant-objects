@@ -3,7 +3,7 @@
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Instance, Principle, Source, Violations, violation
+from .base import EO010, REPORT, Instance, Principle, Source, Violations
 
 ATTRIBUTE = Instance(ast.Attribute)
 CALL = Instance(ast.Call)
@@ -45,20 +45,20 @@ class NoTypeDiscrimination(Principle):
             return self._check_attribute(node)
 
         if MATCH_CLASS.covers(node):
-            return violation(node, ErrorCodes.EO010)
+            return REPORT.of(node, EO010)
 
         return []
 
     def _check_call(self, node: ast.Call) -> Violations:
         """Check for isinstance, type casting, or reflection calls."""
         if self._callee(node.func) in self.FORBIDDEN_CALLS:
-            return violation(node, ErrorCodes.EO010)
+            return REPORT.of(node, EO010)
         return []
 
     def _check_attribute(self, node: ast.Attribute) -> Violations:
         """Check for reflection through dunder type attributes."""
         if node.attr in self.FORBIDDEN_ATTRIBUTES:
-            return violation(node, ErrorCodes.EO010)
+            return REPORT.of(node, EO010)
         return []
 
     def _callee(self, func: ast.expr) -> str:
