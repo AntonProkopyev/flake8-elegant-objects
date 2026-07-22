@@ -18,7 +18,7 @@ class ElegantObjectsPlugin:
     """Flake8 plugin to check for Elegant Objects violations."""
 
     name = "flake8-elegant-objects"
-    version = "1.1.1"
+    version = "2.0.0"
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
