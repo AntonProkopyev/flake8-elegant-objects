@@ -5,8 +5,8 @@ from collections.abc import Iterator
 from types import NoneType
 from typing import final
 
-from .base import NOTHING as ABSENT
 from .base import EO005, REPORT, Instance, Parents, Principle, Source, Violations
+from .base import NOTHING as ABSENT
 
 ANN_ASSIGN = Instance(ast.AnnAssign)
 ARG = Instance(ast.arg)
