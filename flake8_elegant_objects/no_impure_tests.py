@@ -25,19 +25,33 @@ class NoImpureTests:
             return []
 
         violations = []
-        assertion_count = 0
+        assertions = []
 
-        for stmt in node.body:
+        body = self._without_docstring(node.body)
+        for position, stmt in enumerate(body):
             violation_found, is_assertion = self._analyze_statement(stmt, node.name)
 
             if violation_found:
                 violations.extend(violation_found)
 
             if is_assertion:
-                assertion_count += 1
+                assertions.append(position)
 
-        violations.extend(self._validate_assertion_count(assertion_count, node))
+        violations.extend(self._validate_assertions(assertions, body, node))
         return violations
+
+    def _without_docstring(self, body: list[ast.stmt]) -> list[ast.stmt]:
+        """Drop the leading docstring, which is documentation and not code."""
+        if not body:
+            return body
+        first = body[0]
+        if (
+            isinstance(first, ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+        ):
+            return body[1:]
+        return body
 
     def _analyze_statement(
         self, stmt: ast.stmt, test_name: str
@@ -73,12 +87,17 @@ class NoImpureTests:
             return [], True
         return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
 
-    def _validate_assertion_count(
-        self, assertion_count: int, node: ast.FunctionDef | ast.AsyncFunctionDef
+    def _validate_assertions(
+        self,
+        assertions: list[int],
+        body: list[ast.stmt],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> Violations:
-        """Validate that test has exactly one assertion."""
-        if assertion_count != 1:
-            return violation(node, ErrorCodes.EO012.format(name=node.name))
+        """Validate that a test holds one assertion and closes with it."""
+        if len(assertions) != 1:
+            return violation(node, ErrorCodes.EO012_COUNT.format(name=node.name))
+        if assertions[0] != len(body) - 1:
+            return violation(node, ErrorCodes.EO012_ORDER.format(name=node.name))
         return []
 
     def _is_assertion_call(self, call: ast.Call) -> bool:

@@ -28,6 +28,13 @@ class ErrorCodes:
     EO010 = "EO010 isinstance/type casting violates EO principle (avoid type discrimination)"
     EO011 = "EO011 Public method '{name}' without contract (Protocol/ABC) violates EO principle"
     EO012 = "EO012 Test method '{name}' contains non-assertThat statements (only assertThat allowed)"
+    EO012_COUNT = (
+        "EO012 Test method '{name}' must hold exactly one assertion, verifying"
+        " one behaviour"
+    )
+    EO012_ORDER = (
+        "EO012 Test method '{name}' must hold its assertion as the last statement"
+    )
     EO013 = "EO013 ORM/ActiveRecord pattern '{name}' violates EO principle"
     EO014 = "EO014 Implementation inheritance violates EO principle (class '{name}' inherits from non-abstract class)"
     EO015 = "EO015 Mutable class attribute violation: {name}"

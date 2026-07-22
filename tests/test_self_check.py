@@ -23,7 +23,9 @@ BASELINE = {
     "EO006": 14,
     "EO007": 6,
     "EO009": 14,
-    "EO010": 155,
+    # Raised from 155 by _without_docstring in no_impure_tests.py, which needs
+    # three isinstance calls to tell a docstring from a statement.
+    "EO010": 158,
     "EO011": 31,
     "EO013": 2,
     "EO014": 4,

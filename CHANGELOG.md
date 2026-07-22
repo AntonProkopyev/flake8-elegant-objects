@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `match`/`case` class patterns, and reflection through `__class__`, `__bases__`,
   `__mro__` and `__subclasses__`.
 - `EO007` now detects `@x.setter` methods, which are setters regardless of name.
+- `EO012` no longer reports a test docstring as a statement, and now requires the
+  single assertion to be the last statement of the method. The count was already
+  enforced; the position was not, so an assertion followed by anything permitted
+  passed. Its three faults now carry three distinct messages under the one code.
 - `EO001`-`EO004` now match the -er and -or suffixes themselves, including plurals,
   instead of a closed list of about seventy words. The principle says "readers,
   parsers, controllers, sorters, and so on", and the old list missed Iterator,

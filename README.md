@@ -43,7 +43,8 @@ Verb names are not violations: a method is either a noun (builder) or a verb (ma
 - `EO009`: Static or class method, or a module level function, violates EO principle
 - `EO010`: isinstance/type casting violates EO principle (avoid type discrimination)
 - `EO011`: Public method without contract (Protocol/ABC) violates EO principle (test methods exempt)
-- `EO012`: Test method contains non-assertThat statements (only assertThat allowed)
+- `EO012`: Test method is impure: it holds statements other than its assertion,
+  holds more than one assertion, or does not close with it
 - `EO013`: ORM/ActiveRecord pattern violates EO principle
 - `EO014`: Implementation inheritance violates EO principle
 - `EO028`: Class is not final
