@@ -108,6 +108,24 @@ CLASS_DEF = Instance(ast.ClassDef)
 
 
 @final
+class Parents:
+    """Who holds whom in one syntax tree.
+
+    ast gives a node no way back to the node containing it, and the answer
+    used to be an attribute stitched onto the nodes themselves. Borrowed
+    objects were being written to, which is exactly what this plugin tells
+    everyone else not to do.
+    """
+
+    def __init__(self, of: dict[ast.AST, ast.AST]) -> None:
+        self._of = of
+
+    def above(self, node: ast.AST) -> ast.AST | None:
+        """Answer the node holding this one, or nothing at the root."""
+        return self._of.get(node)
+
+
+@final
 class Source:
     """Aggregation of AST node and current class context."""
 
@@ -116,10 +134,12 @@ class Source:
         node: ast.AST,
         current_class: ast.ClassDef | None = None,
         tree: ast.AST | None = None,
+        parents: "Parents | None" = None,
     ) -> None:
         self._node = node
         self._current_class = current_class
         self._tree = tree
+        self._parents = parents
 
     @property
     def node(self) -> ast.AST:
@@ -132,6 +152,10 @@ class Source:
     @property
     def tree(self) -> ast.AST | None:
         return self._tree
+
+    @property
+    def parents(self) -> "Parents":
+        return self._parents or Parents({})
 
 
 class Principle(Protocol):
@@ -194,26 +218,28 @@ class ElegantObjectsCore:
 
     def __init__(self, tree: ast.AST) -> None:
         self.tree = tree
-        self._parent_map: dict[ast.AST, ast.AST | None] = {}
-        self._build_parent_map(tree, None)
 
-    def _build_parent_map(self, node: ast.AST, parent: ast.AST | None) -> None:
-        """Build a map of nodes to their parents for better context."""
-        if parent:
-            setattr(node, "_parent", parent)  # noqa: B010
-        for child in ast.iter_child_nodes(node):
-            self._build_parent_map(child, node)
+    def _parents(self) -> Parents:
+        """Map every node of the tree to the node holding it."""
+        of: dict[ast.AST, ast.AST] = {}
+        for node in ast.walk(self.tree):
+            for child in ast.iter_child_nodes(node):
+                of[child] = node
+        return Parents(of)
 
     def check_violations(self) -> list[Violation]:
         """Check for all violations in the AST tree."""
         # The principles are assembled once per tree, not once per node
-        return self._visit(self.tree, None, tuple(get_all_principles()))
+        return self._visit(
+            self.tree, None, tuple(get_all_principles()), self._parents()
+        )
 
     def _visit(
         self,
         node: ast.AST,
         current_class: ast.ClassDef | None,
         principles: tuple[Principle, ...],
+        parents: Parents,
     ) -> list[Violation]:
         """Visit AST nodes and check for violations."""
         violations = []
@@ -221,10 +247,12 @@ class ElegantObjectsCore:
         if CLASS_DEF.covers(node):
             current_class = node
 
-        violations.extend(self._check_principles(node, current_class, principles))
+        violations.extend(
+            self._check_principles(node, current_class, principles, parents)
+        )
 
         for child in ast.iter_child_nodes(node):
-            violations.extend(self._visit(child, current_class, principles))
+            violations.extend(self._visit(child, current_class, principles, parents))
 
         return violations
 
@@ -233,10 +261,11 @@ class ElegantObjectsCore:
         node: ast.AST,
         current_class: ast.ClassDef | None,
         principles: tuple[Principle, ...],
+        parents: Parents,
     ) -> list[Violation]:
         """Check all principles against the given node."""
         violations = []
-        source = Source(node, current_class, self.tree)
+        source = Source(node, current_class, self.tree, parents)
 
         for principle in principles:
             principle_violations = principle.check(source)

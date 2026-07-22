@@ -3,7 +3,7 @@
 import ast
 from typing import final
 
-from ..base import ErrorCodes, Instance, Source, Violations, violation
+from ..base import ErrorCodes, Instance, Parents, Source, Violations, violation
 from .base import is_mutable_type
 from .copy_on_write_checker import CopyOnWrite
 from .deep_checker import DeepMutability
@@ -56,7 +56,9 @@ class NoMutableObjects:
                 )
         elif ASSIGN.covers(node):
             violations.extend(
-                self._check_assignment_mutation(node, source.current_class)
+                self._check_assignment_mutation(
+                    node, source.current_class, source.parents
+                )
             )
         elif AUG_ASSIGN.covers(node):
             violations.extend(
@@ -68,7 +70,9 @@ class NoMutableObjects:
             )
         elif SUBSCRIPT.covers(node):
             violations.extend(
-                self._check_subscript_mutation(node, source.current_class)
+                self._check_subscript_mutation(
+                    node, source.current_class, source.parents
+                )
             )
 
         if source.tree and MODULE.covers(source.node):
@@ -186,7 +190,10 @@ class NoMutableObjects:
         return violations
 
     def _check_assignment_mutation(
-        self, node: ast.Assign, current_class: ast.ClassDef | None
+        self,
+        node: ast.Assign,
+        current_class: ast.ClassDef | None,
+        parents: Parents,
     ) -> Violations:
         """Check for mutations of instance attributes."""
         violations: Violations = []
@@ -213,7 +220,7 @@ class NoMutableObjects:
                                 )
                             )
                         break
-                    parent = getattr(parent, "_parent", None)
+                    parent = parents.above(parent)
 
         return violations
 
@@ -287,7 +294,10 @@ class NoMutableObjects:
         return violations
 
     def _check_subscript_mutation(
-        self, node: ast.Subscript, current_class: ast.ClassDef | None
+        self,
+        node: ast.Subscript,
+        current_class: ast.ClassDef | None,
+        parents: Parents,
     ) -> Violations:
         """Check for subscript mutations like self.data[0] = value."""
         violations: Violations = []
@@ -295,7 +305,7 @@ class NoMutableObjects:
         if not current_class:
             return violations
 
-        parent = getattr(node, "_parent", None)
+        parent = parents.above(node)
         if parent and ASSIGN.covers(parent):
             if (
                 ATTRIBUTE.covers(node.value)

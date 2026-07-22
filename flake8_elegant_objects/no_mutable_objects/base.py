@@ -1,9 +1,9 @@
 """Base classes and utilities for mutable object checkers."""
 
 import ast
-from typing import Any, final
+from typing import final
 
-from ..base import Instance, Violations
+from ..base import Instance
 
 CALL = Instance(ast.Call)
 NAME = Instance(ast.Name)
@@ -17,22 +17,6 @@ MUTABLE_COMPREHENSION: Instance[ast.ListComp | ast.DictComp | ast.SetComp] = Ins
     ast.DictComp,
     ast.SetComp,
 ))
-
-
-@final
-class MutabilityWalk(ast.NodeVisitor):
-    """Helper visitor to track parent nodes for better mutation detection."""
-
-    def __init__(self, checker: Any, current_class: ast.ClassDef | None) -> None:
-        self.checker = checker
-        self.current_class = current_class
-        self.violations: Violations = []
-
-    def visit(self, node: ast.AST) -> None:
-        """Visit nodes and set parent references."""
-        for child in ast.iter_child_nodes(node):
-            setattr(child, "_parent", node)  # noqa: B010
-        self.generic_visit(node)
 
 
 @final

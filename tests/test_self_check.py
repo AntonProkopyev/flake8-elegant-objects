@@ -18,13 +18,13 @@ from flake8_elegant_objects.noqa import Noqa
 SOURCES = pathlib.Path(__file__).parent.parent / "flake8_elegant_objects"
 
 BASELINE = {
-    "EO005": 15,
-    "EO006": 14,
+    "EO005": 13,
+    "EO006": 11,
     "EO007": 6,
     "EO009": 6,
-    "EO010": 7,
-    "EO011": 35,
-    "EO014": 4,
+    "EO010": 3,
+    "EO011": 36,
+    "EO014": 3,
     "EO017": 6,
     "EO019": 1,
     "EO020": 2,
