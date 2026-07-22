@@ -149,6 +149,43 @@ class RequestHandler:
         assert any("DataProcessor" in v and "EO001" in v for v in violations)
         assert any("RequestHandler" in v and "EO001" in v for v in violations)
 
+    def test_er_suffix_is_open_ended(self) -> None:
+        """Test that the principle covers -er and -or names beyond a fixed list."""
+        code = """
+class Iterator:
+    pass
+
+class Visitor:
+    pass
+
+class Simulator:
+    pass
+
+class Handlers:
+    pass
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 4
+        assert all("EO001" in v for v in violations)
+
+    def test_ordinary_nouns_are_allowed(self) -> None:
+        """Test that ordinary nouns ending in -er survive, alone and compounded."""
+        code = """
+class ImmutableUser:
+    pass
+
+class TaskCounter:
+    pass
+
+class HttpHeader:
+    pass
+
+class OrderNumber:
+    pass
+"""
+        violations = self._check_code(code)
+        assert len(violations) == 0
+
     def test_camel_case_er_names(self) -> None:
         """Test detection of camelCase -er names."""
         code = """

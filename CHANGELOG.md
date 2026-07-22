@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `match`/`case` class patterns, and reflection through `__class__`, `__bases__`,
   `__mro__` and `__subclasses__`.
 - `EO007` now detects `@x.setter` methods, which are setters regardless of name.
+- `EO001`-`EO004` now match the -er and -or suffixes themselves, including plurals,
+  instead of a closed list of about seventy words. The principle says "readers,
+  parsers, controllers, sorters, and so on", and the old list missed Iterator,
+  Visitor, Simulator, Handlers and everything else outside it. Ordinary nouns are
+  allowed by their final word, so ImmutableUser and TaskCounter still pass.
 
 ### Added
 

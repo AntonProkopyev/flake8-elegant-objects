@@ -1,6 +1,7 @@
 """Naming violations checker for Elegant Objects principles."""
 
 import ast
+import re
 from typing import ClassVar
 
 from .base import ErrorCodes, Source, Violations, is_method, violation
@@ -9,100 +10,105 @@ from .base import ErrorCodes, Source, Violations, is_method, violation
 class NoErName:
     """Checks for naming violations in classes, methods, variables, and functions."""
 
-    # Hall of shame: common -er suffixes (from elegantobjects.org)
-    ER_SUFFIXES: ClassVar[set[str]] = {
-        "accumulator",
-        "adapter",
-        "aggregator",
-        "analyzer",
-        "broker",
-        "builder",
-        "calculator",
-        "checker",
-        "collector",
-        "compiler",
-        "compressor",
-        "consumer",
-        "controller",
-        "converter",
-        "coordinator",
-        "creator",
-        "decoder",
-        "decompressor",
-        "deserializer",
-        "dispatcher",
-        "displayer",
-        "encoder",
-        "evaluator",
-        "executor",
-        "exporter",
-        "factory",
-        "fetcher",
-        "filter",
-        "finder",
-        "formatter",
-        "generator",
-        "handler",
-        "helper",
-        "importer",
-        "interpreter",
-        "joiner",
-        "listener",
-        "loader",
-        "manager",
-        "mediator",
-        "merger",
-        "monitor",
-        "observer",
-        "orchestrator",
-        "organizer",
-        "parser",
-        "printer",
-        "processor",
-        "producer",
-        "provider",
-        "reader",
-        "renderer",
-        "reporter",
-        "router",
-        "runner",
-        "saver",
-        "scanner",
-        "scheduler",
-        "serializer",
-        "sorter",
-        "splitter",
-        "supplier",
-        "synchronizer",
-        "tracker",
-        "transformer",
-        "validator",
-        "worker",
-        "wrapper",
-        "writer",
-    }
+    # The principle names readers, parsers, controllers, sorters "and so on",
+    # so the suffix is matched, not a closed list of words.
+    ER_SUFFIXES: ClassVar[tuple[str, ...]] = ("ers", "ors", "er", "or")
 
     # Allowed exceptions (common patterns that are OK)
     ALLOWED_EXCEPTIONS: ClassVar[set[str]] = {
+        "anchor",
+        "author",
+        "behavior",
+        "border",
         "buffer",
+        "center",
+        "chapter",
         "character",
         "cluster",
+        "color",
         "container",
+        "corner",
         "counter",
+        "cover",
+        "cursor",
+        "delimiter",
+        "diameter",
+        "doctor",
+        "elder",
         "error",
+        "factor",
+        "finger",
+        "folder",
         "footer",
+        "gender",
         "header",
+        "humor",
         "identifier",
+        "integer",
+        "interior",
+        "ladder",
+        "layer",
+        "ledger",
+        "letter",
+        "major",
+        "matter",
+        "member",
+        "meter",
+        "mirror",
+        "neighbor",
         "number",
+        "offer",
         "order",
+        "other",
         "owner",
+        "paper",
         "parameter",
+        "partner",
+        "perimeter",
         "pointer",
+        "power",
+        "quarter",
         "register",
+        "remainder",
+        "river",
+        "sector",
+        "semester",
         "server",
+        "shoulder",
+        "silver",
+        "sister",
+        "spider",
+        "summer",
+        "super",
+        "tenor",
+        "terror",
+        "theater",
         "timer",
+        "tower",
+        "trailer",
+        "transfer",
+        "tumor",
+        "upper",
         "user",
+        "vapor",
+        "vector",
+        "water",
+        "weather",
+        "winter",
+        "wonder",
     }
+
+    def _is_allowed(self, name: str) -> bool:
+        """Check if a name ends in an ordinary noun rather than an actor."""
+        return self._last_word(name) in self.ALLOWED_EXCEPTIONS
+
+    def _last_word(self, name: str) -> str:
+        """Split a snake_case or camelCase name and return its final word."""
+        words: list[str] = []
+        for part in name.split("_"):
+            spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", part)
+            words.extend(word.lower() for word in spaced.split() if word)
+        return words[-1] if words else ""
 
     def check(self, source: Source) -> Violations:
         """Check source for naming violations."""
@@ -125,7 +131,7 @@ class NoErName:
         name = node.name.lower()
 
         # Skip if it's an allowed exception
-        if name in self.ALLOWED_EXCEPTIONS:
+        if self._is_allowed(node.name):
             return []
 
         # Check for -er suffixes (the hall of shame)
@@ -146,7 +152,7 @@ class NoErName:
         name = node.name.lower()
 
         # Skip if it's an allowed exception
-        if name in self.ALLOWED_EXCEPTIONS:
+        if self._is_allowed(node.name):
             return []
 
         # Check for -er suffixes; verbs are legitimate method names
@@ -180,7 +186,7 @@ class NoErName:
         name = node.id.lower()
 
         # Skip if it's an allowed exception
-        if name in self.ALLOWED_EXCEPTIONS:
+        if self._is_allowed(node.id):
             return []
 
         # Check for -er suffixes
