@@ -3,7 +3,12 @@
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+MATCH_CLASS = Instance(ast.MatchClass)
+NAME = Instance(ast.Name)
 
 
 @final
@@ -33,13 +38,13 @@ class NoTypeDiscrimination:
         """Check source for type discrimination violations."""
         node = source.node
 
-        if isinstance(node, ast.Call):
+        if CALL.covers(node):
             return self._check_call(node)
 
-        if isinstance(node, ast.Attribute):
+        if ATTRIBUTE.covers(node):
             return self._check_attribute(node)
 
-        if isinstance(node, ast.MatchClass):
+        if MATCH_CLASS.covers(node):
             return violation(node, ErrorCodes.EO010)
 
         return []
@@ -58,8 +63,8 @@ class NoTypeDiscrimination:
 
     def _callee(self, func: ast.expr) -> str:
         """Resolve the trailing name of a called expression."""
-        if isinstance(func, ast.Name):
+        if NAME.covers(func):
             return func.id
-        if isinstance(func, ast.Attribute):
+        if ATTRIBUTE.covers(func):
             return func.attr
         return ""

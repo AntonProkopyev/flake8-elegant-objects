@@ -3,7 +3,20 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, is_method, violation
+from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+ASSIGN = Instance(ast.Assign)
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+CONSTANT = Instance(ast.Constant)
+EXPR = Instance(ast.Expr)
+NAME = Instance(ast.Name)
+PASS = Instance(ast.Pass)
+STRING = Instance(str)
 
 
 @final
@@ -13,7 +26,7 @@ class NoConstructorCode:
     def check(self, source: Source) -> Violations:
         """Check source for constructor code violations."""
         node = source.node
-        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if not FUNCTION.covers(node):
             return []
         return self._check_constructor_code(node)
 
@@ -34,37 +47,35 @@ class NoConstructorCode:
 
     def _is_assembly(self, stmt: ast.stmt) -> bool:
         """Check if a constructor statement merely assembles the object."""
-        if isinstance(stmt, ast.Pass) or self._is_docstring(stmt):
+        if PASS.covers(stmt) or self._is_docstring(stmt):
             return True
-        if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+        if EXPR.covers(stmt) and CALL.covers(stmt.value):
             return self._is_super_call(stmt.value)
-        if isinstance(stmt, ast.Assign):
+        if ASSIGN.covers(stmt):
             return self._is_parameter_assignment(stmt)
         return False
 
     def _is_parameter_assignment(self, stmt: ast.Assign) -> bool:
         """Check if an assignment binds a parameter to a single self attribute."""
-        if len(stmt.targets) != 1 or not isinstance(stmt.targets[0], ast.Attribute):
+        if len(stmt.targets) != 1 or not ATTRIBUTE.covers(stmt.targets[0]):
             return False
         target = stmt.targets[0]
-        if not isinstance(target.value, ast.Name) or target.value.id != "self":
+        if not NAME.covers(target.value) or target.value.id != "self":
             return False
-        return isinstance(stmt.value, ast.Name)
+        return NAME.covers(stmt.value)
 
     def _is_docstring(self, stmt: ast.stmt) -> bool:
         """Check if a statement is a docstring rather than executable code."""
         return (
-            isinstance(stmt, ast.Expr)
-            and isinstance(stmt.value, ast.Constant)
-            and isinstance(stmt.value.value, str)
+            EXPR.covers(stmt)
+            and CONSTANT.covers(stmt.value)
+            and STRING.covers(stmt.value.value)
         )
 
     def _is_super_call(self, call: ast.Call) -> bool:
         """Check if a call is a super() call."""
-        if isinstance(call.func, ast.Name) and call.func.id == "super":
+        if NAME.covers(call.func) and call.func.id == "super":
             return True
-        if isinstance(call.func, ast.Attribute) and isinstance(
-            call.func.value, ast.Call
-        ):
+        if ATTRIBUTE.covers(call.func) and CALL.covers(call.func.value):
             return self._is_super_call(call.func.value)
         return False

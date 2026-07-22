@@ -4,7 +4,21 @@ import ast
 from collections.abc import Iterator
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+ANN_ASSIGN = Instance(ast.AnnAssign)
+ARG = Instance(ast.arg)
+CONSTANT = Instance(ast.Constant)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+RETURN = Instance(ast.Return)
+SCOPE: Instance[ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.Lambda,
+))
 
 
 @final
@@ -14,9 +28,9 @@ class NoNull:
     def check(self, source: Source) -> Violations:
         """Check source for None usage violations."""
         node = source.node
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if FUNCTION.covers(node):
             return self._check_implicit_returns(node)
-        if isinstance(node, ast.Constant) and node.value is None:
+        if CONSTANT.covers(node) and node.value is None:
             # Skip None in type annotations
             if self._is_in_type_annotation(node, source.tree):
                 return []
@@ -42,10 +56,10 @@ class NoNull:
     ) -> Iterator[ast.Return]:
         """Yield the return statements belonging to this function only."""
         for child in ast.iter_child_nodes(node):
-            if isinstance(child, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda):
+            if SCOPE.covers(child):
                 continue
             for inner in ast.walk(child):
-                if isinstance(inner, ast.Return):
+                if RETURN.covers(inner):
                     yield inner
 
     def _is_in_type_annotation(
@@ -58,18 +72,15 @@ class NoNull:
         # Find all annotation contexts in the tree
         for node in ast.walk(tree):
             # Function return annotations
-            if (
-                isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
-                and node.returns
-            ):
+            if FUNCTION.covers(node) and node.returns:
                 if self._node_in_subtree(target_node, node.returns):
                     return True
             # Parameter annotations
-            elif isinstance(node, ast.arg) and node.annotation:
+            elif ARG.covers(node) and node.annotation:
                 if self._node_in_subtree(target_node, node.annotation):
                     return True
             # Variable annotations
-            elif isinstance(node, ast.AnnAssign) and node.annotation:
+            elif ANN_ASSIGN.covers(node) and node.annotation:
                 if self._node_in_subtree(target_node, node.annotation):
                     return True
 

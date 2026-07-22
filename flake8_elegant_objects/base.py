@@ -104,6 +104,8 @@ class Violation:
 
 Violations = list[Violation]
 
+CLASS_DEF = Instance(ast.ClassDef)
+
 
 @final
 class Source:
@@ -216,7 +218,7 @@ class ElegantObjectsCore:
         """Visit AST nodes and check for violations."""
         violations = []
 
-        if isinstance(node, ast.ClassDef):
+        if CLASS_DEF.covers(node):
             current_class = node
 
         violations.extend(self._check_principles(node, current_class, principles))

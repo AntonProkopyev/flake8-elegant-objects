@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, is_method, violation
+from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+CLASS_DEF = Instance(ast.ClassDef)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+NAME = Instance(ast.Name)
 
 
 @final
@@ -14,7 +22,7 @@ class NoPublicMethodsWithoutContracts:
         """Check for public methods without contracts."""
         violations: Violations = []
 
-        if not isinstance(source.node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if not FUNCTION.covers(source.node):
             return violations
 
         if not source.current_class or not is_method(source.node):
@@ -89,9 +97,9 @@ class NoPublicMethodsWithoutContracts:
 
     def _get_base_name(self, base: ast.expr) -> str | None:
         """Extract base class name from AST node."""
-        if isinstance(base, ast.Name):
+        if NAME.covers(base):
             return base.id
-        elif isinstance(base, ast.Attribute):
+        elif ATTRIBUTE.covers(base):
             return base.attr
         return None
 
@@ -121,7 +129,7 @@ class NoPublicMethodsWithoutContracts:
             return None
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name == class_name:
+            if CLASS_DEF.covers(node) and node.name == class_name:
                 return node
 
         return None
@@ -129,7 +137,7 @@ class NoPublicMethodsWithoutContracts:
     def _has_method(self, class_node: ast.ClassDef, method_name: str) -> bool:
         """Check if class has a method with given name."""
         for node in class_node.body:
-            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            if FUNCTION.covers(node):
                 if node.name == method_name:
                     return True
         return False

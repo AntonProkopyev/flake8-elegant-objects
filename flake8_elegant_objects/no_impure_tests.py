@@ -3,7 +3,21 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+ASSERT = Instance(ast.Assert)
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+CONSTANT = Instance(ast.Constant)
+EXPR = Instance(ast.Expr)
+NAME = Instance(ast.Name)
+PASS = Instance(ast.Pass)
+WITH = Instance(ast.With)
+STRING = Instance(str)
 
 
 @final
@@ -14,7 +28,7 @@ class NoImpureTests:
         """Check source for impure test method violations."""
         node = source.node
 
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if FUNCTION.covers(node):
             return self._check_test_methods(node)
 
         return []
@@ -48,9 +62,9 @@ class NoImpureTests:
             return body
         first = body[0]
         if (
-            isinstance(first, ast.Expr)
-            and isinstance(first.value, ast.Constant)
-            and isinstance(first.value.value, str)
+            EXPR.covers(first)
+            and CONSTANT.covers(first.value)
+            and STRING.covers(first.value.value)
         ):
             return body[1:]
         return body
@@ -59,16 +73,16 @@ class NoImpureTests:
         self, stmt: ast.stmt, test_name: str
     ) -> tuple[Violations, bool]:
         """Analyze a statement and return violations and whether it's an assertion."""
-        if isinstance(stmt, ast.Pass):
+        if PASS.covers(stmt):
             return [], False
 
-        if isinstance(stmt, ast.Assert):
+        if ASSERT.covers(stmt):
             return [], True
 
-        if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+        if EXPR.covers(stmt) and CALL.covers(stmt.value):
             return self._handle_expression_call(stmt, test_name)
 
-        if isinstance(stmt, ast.With):
+        if WITH.covers(stmt):
             return self._handle_with_statement(stmt, test_name)
 
         return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
@@ -77,7 +91,7 @@ class NoImpureTests:
         self, stmt: ast.Expr, test_name: str
     ) -> tuple[Violations, bool]:
         """Handle expression call statements."""
-        if isinstance(stmt.value, ast.Call) and self._is_assertion_call(stmt.value):
+        if CALL.covers(stmt.value) and self._is_assertion_call(stmt.value):
             return [], True
         return violation(stmt, ErrorCodes.EO012.format(name=test_name)), False
 
@@ -105,7 +119,7 @@ class NoImpureTests:
     def _is_assertion_call(self, call: ast.Call) -> bool:
         """Check if a call is an assertion."""
         # Check for unittest style assertions (self.assertEqual, self.assertTrue, etc.)
-        if isinstance(call.func, ast.Attribute):
+        if ATTRIBUTE.covers(call.func):
             if call.func.attr.startswith("assert"):
                 return True
             # Check for chained assertions like assertThat(...).isEqualTo(...)
@@ -113,7 +127,7 @@ class NoImpureTests:
                 return True
 
         # Check for standalone assertion functions
-        if isinstance(call.func, ast.Name):
+        if NAME.covers(call.func):
             if call.func.id.startswith("assert") or call.func.id == "assertThat":
                 return True
 
@@ -122,21 +136,21 @@ class NoImpureTests:
     def _contains_assertion_in_chain(self, call: ast.Call) -> bool:
         """Check if assertion exists anywhere in the call chain."""
         current = call
-        while isinstance(current, ast.Call):
-            if isinstance(current.func, ast.Name):
+        while CALL.covers(current):
+            if NAME.covers(current.func):
                 if (
                     current.func.id.startswith("assert")
                     or current.func.id == "assertThat"
                 ):
                     return True
-            elif isinstance(current.func, ast.Attribute):
+            elif ATTRIBUTE.covers(current.func):
                 if (
                     current.func.attr.startswith("assert")
                     or current.func.attr == "assertThat"
                 ):
                     return True
                 # Move to the next level in the chain
-                if isinstance(current.func.value, ast.Call):
+                if CALL.covers(current.func.value):
                     current = current.func.value
                 else:
                     break
@@ -147,12 +161,12 @@ class NoImpureTests:
     def _is_assertion_context_manager(self, with_stmt: ast.With) -> bool:
         """Check if with statement is for assertions like pytest.raises."""
         for item in with_stmt.items:
-            if isinstance(item.context_expr, ast.Call):
-                if isinstance(item.context_expr.func, ast.Attribute):
+            if CALL.covers(item.context_expr):
+                if ATTRIBUTE.covers(item.context_expr.func):
                     # Check for pytest.raises, unittest.assertRaises, etc.
                     if item.context_expr.func.attr in {"raises", "assertRaises"}:
                         return True
-                elif isinstance(item.context_expr.func, ast.Name):
+                elif NAME.covers(item.context_expr.func):
                     if item.context_expr.func.id in {"raises", "assertRaises"}:
                         return True
         return False

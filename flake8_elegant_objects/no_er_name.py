@@ -4,7 +4,16 @@ import ast
 import re
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Source, Violations, is_method, violation
+from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+
+ANN_ASSIGN = Instance(ast.AnnAssign)
+ASSIGN = Instance(ast.Assign)
+CLASS_DEF = Instance(ast.ClassDef)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+NAME = Instance(ast.Name)
 
 
 @final
@@ -120,13 +129,13 @@ class NoErName:
         violations = []
         node = source.node
 
-        if isinstance(node, ast.ClassDef):
+        if CLASS_DEF.covers(node):
             violations.extend(self._check_class_name(node))
-        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        elif FUNCTION.covers(node):
             violations.extend(self._check_function_name(node))
-        elif isinstance(node, ast.Assign):
+        elif ASSIGN.covers(node):
             violations.extend(self._check_variable_assignment(node))
-        elif isinstance(node, ast.AnnAssign):
+        elif ANN_ASSIGN.covers(node):
             violations.extend(self._check_annotated_assignment(node))
 
         return violations
@@ -172,13 +181,13 @@ class NoErName:
         """Check variable names in assignments."""
         violations = []
         for target in node.targets:
-            if isinstance(target, ast.Name):
+            if NAME.covers(target):
                 violations.extend(self._check_variable_name(target))
         return violations
 
     def _check_annotated_assignment(self, node: ast.AnnAssign) -> Violations:
         """Check variable names in annotated assignments."""
-        if isinstance(node.target, ast.Name):
+        if NAME.covers(node.target):
             return self._check_variable_name(node.target)
         return []
 

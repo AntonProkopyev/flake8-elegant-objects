@@ -3,7 +3,18 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+CALL = Instance(ast.Call)
+LITERAL: Instance[ast.Constant | ast.List | ast.Dict | ast.Tuple | ast.Set] = Instance((
+    ast.Constant,
+    ast.List,
+    ast.Dict,
+    ast.Tuple,
+    ast.Set,
+))
+NAME = Instance(ast.Name)
 
 
 @final
@@ -14,14 +25,14 @@ class NoOrm:
         """Check source for ORM pattern violations."""
         node = source.node
 
-        if isinstance(node, ast.Call):
+        if CALL.covers(node):
             return self._check_orm_patterns(node)
 
         return []
 
     def _check_orm_patterns(self, node: ast.Call) -> Violations:
         """Check for ORM/ActiveRecord patterns."""
-        if not isinstance(node.func, ast.Attribute):
+        if not ATTRIBUTE.covers(node.func):
             return []
 
         orm_methods = {
@@ -65,7 +76,7 @@ class NoOrm:
     def _is_allowed_method_usage(self, value: ast.AST) -> bool:
         """Check if the method usage is allowed (not ORM)."""
         # Built-in types
-        if isinstance(value, ast.Name) and value.id in {
+        if NAME.covers(value) and value.id in {
             "list",
             "dict",
             "set",
@@ -78,17 +89,17 @@ class NoOrm:
             return True
 
         # Allow methods on list/dict variables
-        if isinstance(value, ast.Name) and value.id.endswith("_list"):
+        if NAME.covers(value) and value.id.endswith("_list"):
             return True
 
         # Literal values
-        if isinstance(value, ast.Constant | ast.List | ast.Dict | ast.Tuple | ast.Set):
+        if LITERAL.covers(value):
             return True
 
         # Constructor calls
         return (
-            isinstance(value, ast.Call)
-            and isinstance(value.func, ast.Name)
+            CALL.covers(value)
+            and NAME.covers(value.func)
             and value.func.id
             in {"open", "int", "str", "list", "dict", "set", "tuple", "bool", "float"}
         )

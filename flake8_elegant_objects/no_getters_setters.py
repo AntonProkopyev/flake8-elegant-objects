@@ -3,7 +3,15 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, is_method, violation
+from .base import ErrorCodes, Instance, Source, Violations, is_method, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+NAME = Instance(ast.Name)
+RETURN = Instance(ast.Return)
 
 
 @final
@@ -13,7 +21,7 @@ class NoAccessMethods:
     def check(self, source: Source) -> Violations:
         """Check source for getter/setter violations."""
         node = source.node
-        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if not FUNCTION.covers(node):
             return []
         return self._check_getters_setters(node)
 
@@ -26,12 +34,12 @@ class NoAccessMethods:
 
         # Property setters are setters, whatever the method is called
         for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Attribute) and decorator.attr == "setter":
+            if ATTRIBUTE.covers(decorator) and decorator.attr == "setter":
                 return violation(node, ErrorCodes.EO007.format(name=node.name))
 
         # Properties that only hand back an attribute are getters
         for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Name) and decorator.id == "property":
+            if NAME.covers(decorator) and decorator.id == "property":
                 if self._returns_attribute(node):
                     return violation(node, ErrorCodes.EO007.format(name=node.name))
                 return []
@@ -44,9 +52,9 @@ class NoAccessMethods:
             return False
         statement = node.body[0]
         return (
-            isinstance(statement, ast.Return)
-            and isinstance(statement.value, ast.Attribute)
-            and isinstance(statement.value.value, ast.Name)
+            RETURN.covers(statement)
+            and ATTRIBUTE.covers(statement.value)
+            and NAME.covers(statement.value.value)
             and statement.value.value.id == "self"
         )
 

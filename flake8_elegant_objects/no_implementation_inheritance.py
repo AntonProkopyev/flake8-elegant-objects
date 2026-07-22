@@ -3,7 +3,11 @@
 import ast
 from typing import final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+CLASS_DEF = Instance(ast.ClassDef)
+NAME = Instance(ast.Name)
 
 
 @final
@@ -14,7 +18,7 @@ class NoImplementationInheritance:
         """Check source for implementation inheritance violations."""
         node = source.node
 
-        if isinstance(node, ast.ClassDef):
+        if CLASS_DEF.covers(node):
             return self._check_implementation_inheritance(node, source.tree)
 
         return []
@@ -24,7 +28,7 @@ class NoImplementationInheritance:
         if not tree:
             return False
         for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name == name:
+            if CLASS_DEF.covers(node) and node.name == name:
                 return any(
                     self._base_name(base) in {"ABC", "ABCMeta", "Protocol"}
                     for base in node.bases
@@ -33,9 +37,9 @@ class NoImplementationInheritance:
 
     def _base_name(self, base: ast.expr) -> str:
         """Resolve the trailing name of a base class expression."""
-        if isinstance(base, ast.Name):
+        if NAME.covers(base):
             return base.id
-        if isinstance(base, ast.Attribute):
+        if ATTRIBUTE.covers(base):
             return base.attr
         return ""
 
@@ -46,7 +50,7 @@ class NoImplementationInheritance:
         for base in node.bases:
             is_abstract_base = False
 
-            if isinstance(base, ast.Name):
+            if NAME.covers(base):
                 # Allow inheritance from abstract base classes and common patterns
                 allowed_bases = {
                     # Abstract bases
@@ -73,11 +77,11 @@ class NoImplementationInheritance:
                 }
                 is_abstract_base = base.id in allowed_bases
 
-            elif isinstance(base, ast.Attribute):
+            elif ATTRIBUTE.covers(base):
                 # Check for module.AbstractBase patterns
                 if base.attr in {"Protocol", "ABC"}:
                     is_abstract_base = True
-                elif isinstance(base.value, ast.Name) and base.value.id in {
+                elif NAME.covers(base.value) and base.value.id in {
                     "abc",
                     "typing",
                     "collections",
@@ -85,7 +89,7 @@ class NoImplementationInheritance:
                 }:
                     is_abstract_base = True
                 # Check for imported ABC/Protocol
-                elif isinstance(base.value, ast.Name) and base.attr in {
+                elif NAME.covers(base.value) and base.attr in {
                     "ABC",
                     "abstractmethod",
                     "Protocol",

@@ -3,7 +3,15 @@
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
+
+ATTRIBUTE = Instance(ast.Attribute)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+MODULE = Instance(ast.Module)
+NAME = Instance(ast.Name)
 
 
 @final
@@ -21,10 +29,10 @@ class NoStatic:
         """Check source for static method violations."""
         node = source.node
 
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if FUNCTION.covers(node):
             return self._check_static_methods(node)
 
-        if isinstance(node, ast.Module):
+        if MODULE.covers(node):
             return self._check_utility_functions(node)
 
         return []
@@ -33,7 +41,7 @@ class NoStatic:
         """Check for module level functions, the Python static method."""
         violations: Violations = []
         for statement in node.body:
-            if isinstance(statement, ast.FunctionDef | ast.AsyncFunctionDef):
+            if FUNCTION.covers(statement):
                 if statement.name.startswith("_"):
                     continue
                 violations.extend(
@@ -53,8 +61,8 @@ class NoStatic:
 
     def _decorator_name(self, decorator: ast.expr) -> str:
         """Resolve the trailing name of a decorator expression."""
-        if isinstance(decorator, ast.Name):
+        if NAME.covers(decorator):
             return decorator.id
-        if isinstance(decorator, ast.Attribute):
+        if ATTRIBUTE.covers(decorator):
             return decorator.attr
         return ""

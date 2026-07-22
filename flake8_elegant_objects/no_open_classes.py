@@ -8,9 +8,19 @@ stopped being one object.
 import ast
 from typing import ClassVar, final
 
-from .base import ErrorCodes, Source, Violations, violation
+from .base import ErrorCodes, Instance, Source, Violations, violation
 
 MAX_ATTRIBUTES = 4
+
+ANN_ASSIGN = Instance(ast.AnnAssign)
+ASSIGN = Instance(ast.Assign)
+ATTRIBUTE = Instance(ast.Attribute)
+CLASS_DEF = Instance(ast.ClassDef)
+FUNCTION: Instance[ast.FunctionDef | ast.AsyncFunctionDef] = Instance((
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+))
+NAME = Instance(ast.Name)
 
 
 @final
@@ -22,7 +32,7 @@ class NoOpenClasses:
     def check(self, source: Source) -> Violations:
         """Check source for open or overweight classes."""
         node = source.node
-        if not isinstance(node, ast.ClassDef):
+        if not CLASS_DEF.covers(node):
             return []
 
         violations: Violations = []
@@ -55,15 +65,13 @@ class NoOpenClasses:
         """Collect the attribute names a class declares."""
         names: set[str] = set()
         for statement in node.body:
-            if isinstance(statement, ast.AnnAssign) and isinstance(
-                statement.target, ast.Name
-            ):
+            if ANN_ASSIGN.covers(statement) and NAME.covers(statement.target):
                 names.add(statement.target.id)
-            elif isinstance(statement, ast.Assign):
+            elif ASSIGN.covers(statement):
                 for target in statement.targets:
-                    if isinstance(target, ast.Name):
+                    if NAME.covers(target):
                         names.add(target.id)
-            elif isinstance(statement, ast.FunctionDef | ast.AsyncFunctionDef):
+            elif FUNCTION.covers(statement):
                 names.update(self._assigned_attributes(statement))
         return names
 
@@ -74,14 +82,14 @@ class NoOpenClasses:
         names: set[str] = set()
         for inner in ast.walk(node):
             targets: list[ast.expr] = []
-            if isinstance(inner, ast.Assign):
+            if ASSIGN.covers(inner):
                 targets = list(inner.targets)
-            elif isinstance(inner, ast.AnnAssign):
+            elif ANN_ASSIGN.covers(inner):
                 targets = [inner.target]
             for target in targets:
                 if (
-                    isinstance(target, ast.Attribute)
-                    and isinstance(target.value, ast.Name)
+                    ATTRIBUTE.covers(target)
+                    and NAME.covers(target.value)
                     and target.value.id == "self"
                 ):
                     names.add(target.attr)
@@ -101,8 +109,8 @@ class NoOpenClasses:
 
     def _trailing_name(self, node: ast.expr) -> str:
         """Resolve the trailing name of an expression."""
-        if isinstance(node, ast.Name):
+        if NAME.covers(node):
             return node.id
-        if isinstance(node, ast.Attribute):
+        if ATTRIBUTE.covers(node):
             return node.attr
         return ""
